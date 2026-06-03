@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="Gishath/Gishath.vcxproj" />
+  <Project Path="Gishath/Gishath.vcxproj" Id="b60afda4-63e9-48ff-ab5c-49120348d879" />
 </Solution>

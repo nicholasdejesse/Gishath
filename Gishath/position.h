@@ -1,20 +1,25 @@
 #pragma once
-#include "board.h"
-#include <cstdint>
-
-enum class CastleRights : uint8_t {
-    WK = 1,
-    WQ = 2,
-    BK = 4,
-    BQ = 8
-};
+#include <string>
+#include "move.h"
+#include "types.h"
 
 class Position {
-public:
-    Board board_state;
+private:
+    Piece board_mailbox[SQUARE_NUM];
+    Bitboard type_BB[piece_type_num];
+    Bitboard color_BB[color_num];
     bool white_to_move;
-    CastleRights castle_rights;
+    uint8_t castle_rights;
     uint8_t halfmove_clock;
     uint16_t fullmove_clock;
     int8_t en_passant_file;
+
+public:
+    //void SetFromFen(std::string fen);
+    std::string to_string();
+
+    void make_move(Move move);
+    void unmake_move(Move move);
+
+    Position();
 };

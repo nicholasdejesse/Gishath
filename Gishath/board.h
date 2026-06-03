@@ -15,5 +15,6 @@ struct Board {
     U64 black_rooks;
     U64 black_queens;
     U64 black_kings;
+
     Board();
 };

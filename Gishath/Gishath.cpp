@@ -6,8 +6,10 @@
 
 int main()
 {
+    // TODO: Precompute any expensive stuff here (e.g. attack bitboards)
+
     Position pos = Position();
-    std::cout << pos.board_state.black_bishops;
+    std::cout << pos.to_string();
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
