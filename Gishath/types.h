@@ -34,6 +34,11 @@ inline Square operator-(Square s, Direction d) { return Square(int(s) - int(d));
 inline Square& operator+=(Square& s, Direction d) { return s = s + d; }
 inline Square& operator-=(Square& s, Direction d) { return s = s - d; }
 
+enum Color : uint8_t {
+    white,
+    black,
+    color_num = 2
+};
 
 enum File : uint8_t {
     file_a,
@@ -78,19 +83,19 @@ enum MoveType : uint8_t {
 };
 
 enum PieceType : uint8_t {
-    no_piece_type = -1,
-    pawn = 0,
-    knight = 1,
-    bishop = 2,
-    rook = 3,
-    queen = 4,
-    king = 5,
+    no_piece_type,
+    pawn,
+    knight,
+    bishop,
+    rook,
+    queen,
+    king,
     piece_type_num = 6
 };
 
 enum Piece : uint8_t {
-    no_piece = -1,
-    white_pawn = 0,
+    no_piece,
+    white_pawn,
     white_knight,
     white_bishop,
     white_rook,
@@ -107,12 +112,6 @@ enum Piece : uint8_t {
 constexpr Piece make_piece(Color c, PieceType pt) {
     return Piece((c << 3) | pt);
 }
-
-enum Color : uint8_t {
-    white,
-    black,
-    color_num = 2
-};
 
 constexpr Color color_of(Piece p) {
     return Color(p >> 3);

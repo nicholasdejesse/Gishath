@@ -1,8 +1,12 @@
 #include "position.h"
+#include <iostream>
 
-Position::Position() : board_mailbox{}, type_BB{}, color_BB{}, white_to_move(true), castle_rights(WK | WQ | BK | BQ), halfmove_clock(0), fullmove_clock(0), en_passant_file(-1) {}
+Position::Position() : board_mailbox{}, type_BB{}, color_BB{}, white_to_move(true), castle_rights(WK | WQ | BK | BQ), halfmove_clock(0), fullmove_clock(1), en_passant_file(-1) {}
 
 std::string Position::to_string() {
+    std::string piece_to_char = ".PNBRQK  pnbrqk";
+    std::string file_markers = "   a b c d e f g h\n";
+
     std::string str = "";
 
     if (white_to_move) {
@@ -16,14 +20,21 @@ std::string Position::to_string() {
     std::string board = "";
     for (int r = 0; r < 8; ++r) {
         std::string row_str = "";
+        row_str += std::to_string(r + 1) + "  ";
         for (int c = 0; c < 8; ++c) {
             int square = r * 8 + c;
-            row_str += std::to_string(static_cast<int>(board_mailbox[square])) + "\t";
+            row_str += piece_to_char[(static_cast<int>(board_mailbox[square]))];
+            row_str += ' ';
+
         }
         board = "\n" + row_str + board;
     }
 
-    return str + board;
+    board += "\n\n";
+
+    str = str + board + file_markers;
+
+    return str;
 }
 
 void Position::make_move(Move m) {
