@@ -26,41 +26,96 @@ std::string Position::to_string() {
     return str + board;
 }
 
-void Position::make_move(Move move) {
-    ++halfmove_clock;
-    ++fullmove_clock;
-
-    Square from = move.get_from();
-    Square to = move.get_to();
+void Position::make_move(Move m) {
+    Square from = m.get_from();
+    Square to = m.get_to();
     Piece piece = board_mailbox[from];
     PieceType type = type_of(piece);
-    Color color = color_of(piece);
+    Color us = color_of(piece);
+    Color them = Color(1 - us);
+    MoveType move_type = m.type_of();
+    Piece captured_piece = move_type == en_passant ? make_piece(them, pawn) : board_mailbox[to];
+    Bitboard from_mask = square_to_bitboard(from);
+    Bitboard to_mask = square_to_bitboard(to);
 
-    board_mailbox[from] = no_piece;
-    board_mailbox[to] = piece;
-    Bitboard from_mask = static_cast<Bitboard>(1) << from;
-    Bitboard to_mask = static_cast<Bitboard>(1) << to;
+    ++halfmove_clock;
+    en_passant_file = -1;
+    if (!white_to_move) {
+        ++fullmove_clock;
+    }
 
     type_BB[type] ^= from_mask;
-    color_BB[color] ^= from_mask;
-    color_BB[color] ^= to_mask;
+    color_BB[us] ^= from_mask;
+    board_mailbox[from] = no_piece;
 
-    // TODO: to mask, captures, castling, en passant file, 50 move rule
+    color_BB[us] ^= to_mask;
+
+    if (captured_piece != no_piece) {
+        if (move_type == en_passant) {
+            Square pawn_pos = to - relative_direction(us, south);
+            type_BB[pawn] ^= square_to_bitboard(pawn_pos);
+            color_BB[them] ^= square_to_bitboard(pawn_pos);
+            board_mailbox[pawn_pos] = no_piece;
+            halfmove_clock = 0;
+        }
+        else {
+            PieceType captured_type = type_of(captured_piece);
+            type_BB[captured_type] ^= to_mask;
+            color_BB[them] ^= to_mask;
+            halfmove_clock = 0;
+            if (captured_type == rook) {
+                if (to == relative_square(them, h1)) {
+                    castle_rights &= ~(them == white ? WK : BK);
+                }
+                else if (to == relative_square(them, a1)) {
+                    castle_rights &= ~(them == white ? WQ : BQ);
+                }
+            }
+        }
+    }
 
     if (type == king) {
         castle_rights = 0;
     }
+    else if (type == pawn) {
+        halfmove_clock = 0;
+        if (std::abs(to - from) > north) {
+            en_passant_file = file_of(to);
+        }
+    }
+    else if (type == rook) {
+        if (from == relative_square(us, h1)) {
+            castle_rights &= ~(us == white ? WK : BK);
+        }
+        else if (from == relative_square(us, a1)) {
+            castle_rights &= ~(us == white ? WQ : BQ);
+        }
+    }
 
-    if (move.is_promotion()) {
-        PieceType promo_type = move.get_promotion_piece_type();
+    if (move_type == promotion) {
+        PieceType promo_type = m.get_promotion_piece_type();
         type_BB[promo_type] ^= to_mask;
+        board_mailbox[to] = Piece(us * 8 + promo_type);
     }
     else {
         type_BB[type] ^= to_mask;
-        if (move.is_castle()) {
-
+        board_mailbox[to] = piece;
+        if (move_type == castle) {
+            bool kingside = (relative_square(us, to) == g1);
+            Square from_rook = kingside ? relative_square(us, h1) : relative_square(us, a1);
+            Square to_rook = kingside ? relative_square(us, f1) : relative_square(us, d1);
+            type_BB[rook] ^= square_to_bitboard(from_rook);
+            color_BB[us] ^= square_to_bitboard(from_rook);
+            type_BB[rook] ^= square_to_bitboard(to_rook);
+            color_BB[us] ^= square_to_bitboard(to_rook);
+            board_mailbox[from_rook] = no_piece;
+            board_mailbox[to_rook] = us == white ? white_rook : black_rook;
         }
     }
 
     white_to_move = !white_to_move;
+}
+
+void Position::unmake_move(Move m) {
+
 }

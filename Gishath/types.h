@@ -8,14 +8,53 @@ constexpr int SQUARE_NUM = 64;
 
 
 enum Square : uint8_t {
-    a1, a2, a3, a4, a5, a6, a7, a8,
-    b1, b2, b3, b4, b5, b6, b7, b8,
-    c1, c2, c3, c4, c5, c6, c7, c8,
-    d1, d2, d3, d4, d5, d6, d7, d8,
-    e1, e2, e3, e4, e5, e6, e7, e8,
-    f1, f2, f3, f4, f5, f6, f7, f8,
-    g1, g2, g3, g4, g5, g6, g7, g8,
-    h1, h2, h3, h4, h5, h6, h7, h8
+    a1, b1, c1, d1, e1, f1, g1, h1,
+    a2, b2, c2, d2, e2, f2, g2, h2,
+    a3, b3, c3, d3, e3, f3, g3, h3,
+    a4, b4, c4, d4, e4, f4, g4, h4,
+    a5, b5, c5, d5, e5, f5, g5, h5,
+    a6, b6, c6, d6, e6, f6, g6, h6,
+    a7, b7, c7, d7, e7, f7, g7, h7,
+    a8, b8, c8, d8, e8, f8, g8, h8,
+};
+
+enum Direction : int8_t {
+    north = 8,
+    east = 1,
+    south = -1 * north,
+    west = -1 * east,
+    north_east = north + east,
+    north_west = north + west,
+    south_east = south + east,
+    south_west = south + west
+};
+
+inline Square operator+(Square s, Direction d) { return Square(int(s) + int(d)); }
+inline Square operator-(Square s, Direction d) { return Square(int(s) - int(d)); }
+inline Square& operator+=(Square& s, Direction d) { return s = s + d; }
+inline Square& operator-=(Square& s, Direction d) { return s = s - d; }
+
+
+enum File : uint8_t {
+    file_a,
+    file_b,
+    file_c,
+    file_d,
+    file_e,
+    file_f,
+    file_g,
+    file_h
+};
+
+enum Rank : uint8_t {
+    rank_1,
+    rank_2,
+    rank_3,
+    rank_4,
+    rank_5,
+    rank_6,
+    rank_7,
+    rank_8
 };
 
 enum CastleRights : uint8_t {
@@ -23,6 +62,19 @@ enum CastleRights : uint8_t {
     WQ = 2,
     BK = 4,
     BQ = 8
+};
+
+// Based on stockfish move encoding
+// Bits 0-5: to square (0..63)
+// Bits 6-11: from square (0..63)
+// Bits 12-13: promotion piece type (0..3) (knight, bishop, rook, queen)
+// Bit 14-15: special move flag (0..3) (quiet, promotion, castle, en passant)
+
+enum MoveType : uint8_t {
+    quiet_move,
+    promotion = 1 << 14,
+    en_passant = 2 << 14,
+    castle = 3 << 14,
 };
 
 enum PieceType : uint8_t {
@@ -52,6 +104,10 @@ enum Piece : uint8_t {
     black_king,
 };
 
+constexpr Piece make_piece(Color c, PieceType pt) {
+    return Piece((c << 3) | pt);
+}
+
 enum Color : uint8_t {
     white,
     black,
@@ -68,4 +124,20 @@ constexpr PieceType type_of(Piece p) {
 
 constexpr Square relative_square(Color c, Square sq) {
     return Square(sq ^ (c * 56)); // xor with 56 flips board
+}
+
+constexpr Direction relative_direction(Color c, Direction dir) {
+    return Direction(dir * (c == white ? 1 : -1)); // flip direction for black
+}
+
+constexpr Bitboard square_to_bitboard(Square sq) {
+    return Bitboard(1) << sq;
+}
+
+constexpr Rank rank_of(Square sq) {
+    return Rank(sq / 8);
+}
+
+constexpr File file_of(Square sq) {
+    return File(sq % 8);
 }
