@@ -1,5 +1,8 @@
 #include "move.h"
+#include <iostream>
 
+
+// TODO: THIS IS NOT CORRECT (NEED TO FIX)?
 Move::Move(unsigned int from, unsigned int to, unsigned int flags) {
     m_Move = ((flags & 0xF) << 12) | ((from & 0x3F) << 6) | (to & 0x3F);
 }
@@ -27,6 +30,6 @@ void Move::operator=(Move a) {
     m_Move = a.m_Move;
 }
 
-bool Move::operator==(Move a) const { return (m_Move & 0xffff) == (a.m_Move & 0xffff); }
-
-bool Move::operator!=(Move a) const { return (m_Move & 0xffff) != (a.m_Move & 0xffff); }
+//bool Move::operator==(Move a) const { return (m_Move & 0xffff) == (a.m_Move & 0xffff); }
+//
+//bool Move::operator!=(Move a) const { return (m_Move & 0xffff) != (a.m_Move & 0xffff); }

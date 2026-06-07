@@ -15,12 +15,17 @@ private:
     uint16_t fullmove_clock;
     int8_t en_passant_file;
 
+    void move_piece(Square from, Square to);
+    void put_piece(Square to, Piece piece);
+    void remove_piece(Square from);
+
 public:
     //void SetFromFen(std::string fen);
     std::string to_string();
 
     void make_move(Move move);
     void unmake_move(Move move);
+    void load_fen(std::string fen);
 
     Position();
 };

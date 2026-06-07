@@ -1,7 +1,103 @@
 #include "position.h"
 #include <iostream>
+#include <sstream>
+#include <cctype>
 
 Position::Position() : board_mailbox{}, type_BB{}, color_BB{}, white_to_move(true), castle_rights(WK | WQ | BK | BQ), halfmove_clock(0), fullmove_clock(1), en_passant_file(-1) {}
+
+void Position::load_fen(std::string fen) {
+    for (int i = 0; i < SQUARE_NUM; ++i) {
+        board_mailbox[i] = no_piece;
+    }
+    for (int i = 0; i < piece_type_num; ++i) {
+        type_BB[i] = 0;
+    }
+    for (int i = 0; i < color_num; ++i) {
+        color_BB[i] = 0;
+    }
+
+    std::istringstream ss(fen);
+    std::string pieces, side_to_move, castling, en_passant;
+    int halfmoves, fullmoves;
+
+    ss >> pieces >> side_to_move >> castling >> en_passant >> halfmoves >> fullmoves;
+
+    // 1. Piece position
+    int rank_idx = 7;
+    int file_idx = 0;
+    for (char c : pieces) {
+        if (c == '/') {
+            --rank_idx;
+            file_idx = 0;
+            continue;
+        }
+        else if (std::isdigit(c)) {
+            int empty_squares = c - '0';
+            file_idx += empty_squares;
+        }
+        else {
+            Piece piece;
+            switch (c) {
+            case 'P': piece = white_pawn; break;
+            case 'N': piece = white_knight; break;
+            case 'B': piece = white_bishop; break;
+            case 'R': piece = white_rook; break;
+            case 'Q': piece = white_queen; break;
+            case 'K': piece = white_king; break;
+            case 'p': piece = black_pawn; break;
+            case 'n': piece = black_knight; break;
+            case 'b': piece = black_bishop; break;
+            case 'r': piece = black_rook; break;
+            case 'q': piece = black_queen; break;
+            case 'k': piece = black_king; break;
+            default: throw std::invalid_argument("Invalid FEN string");
+            }
+            put_piece(Square(rank_idx * 8 + file_idx), piece);
+            ++file_idx;
+        }
+    }
+
+    // 2. Side to move
+    if (side_to_move == "w") {
+        white_to_move = true;
+    }
+    else if (side_to_move == "b") {
+        white_to_move = false;
+    }
+    else {
+        throw std::invalid_argument("Invalid FEN string");
+    }
+
+    // 3. Castling rights
+    castle_rights = 0;
+    for (char c : castling) {
+        switch (c) {
+        case 'K': castle_rights |= WK; break;
+        case 'Q': castle_rights |= WQ; break;
+        case 'k': castle_rights |= BK; break;
+        case 'q': castle_rights |= BQ; break;
+        case '-': break; // No castling rights
+        default: throw std::invalid_argument("Invalid FEN string");
+        }
+    }
+    
+    // 4. En passant
+    en_passant_file = -1;
+    if (en_passant != "-") {
+        char file_char = en_passant[0];
+        char rank_char = en_passant[1];
+        if (file_char < 'a' || file_char > 'h' || rank_char < '1' || rank_char > '8') {
+            throw std::invalid_argument("Invalid FEN string");
+        }
+        en_passant_file = file_char - 'a';
+    }
+    
+    // 5. Halfmove clock
+    halfmove_clock = halfmoves;
+    
+    // 6. Fullmove clock
+    fullmove_clock = fullmoves;
+}
 
 std::string Position::to_string() {
     std::string piece_to_char = ".PNBRQK  pnbrqk";
@@ -55,24 +151,16 @@ void Position::make_move(Move m) {
         ++fullmove_clock;
     }
 
-    type_BB[type] ^= from_mask;
-    color_BB[us] ^= from_mask;
-    board_mailbox[from] = no_piece;
-
-    color_BB[us] ^= to_mask;
-
+    remove_piece(from);
     if (captured_piece != no_piece) {
         if (move_type == en_passant) {
             Square pawn_pos = to - relative_direction(us, south);
-            type_BB[pawn] ^= square_to_bitboard(pawn_pos);
-            color_BB[them] ^= square_to_bitboard(pawn_pos);
-            board_mailbox[pawn_pos] = no_piece;
+            remove_piece(pawn_pos);
             halfmove_clock = 0;
         }
         else {
             PieceType captured_type = type_of(captured_piece);
-            type_BB[captured_type] ^= to_mask;
-            color_BB[them] ^= to_mask;
+            remove_piece(to);
             halfmove_clock = 0;
             if (captured_type == rook) {
                 if (to == relative_square(them, h1)) {
@@ -90,7 +178,7 @@ void Position::make_move(Move m) {
     }
     else if (type == pawn) {
         halfmove_clock = 0;
-        if (std::abs(to - from) > north) {
+        if (std::abs(static_cast<int>(to) - static_cast<int>(from)) > north) {
             en_passant_file = file_of(to);
         }
     }
@@ -105,22 +193,15 @@ void Position::make_move(Move m) {
 
     if (move_type == promotion) {
         PieceType promo_type = m.get_promotion_piece_type();
-        type_BB[promo_type] ^= to_mask;
-        board_mailbox[to] = Piece(us * 8 + promo_type);
+        put_piece(to, make_piece(us, promo_type));
     }
     else {
-        type_BB[type] ^= to_mask;
-        board_mailbox[to] = piece;
+        put_piece(to, piece);
         if (move_type == castle) {
             bool kingside = (relative_square(us, to) == g1);
             Square from_rook = kingside ? relative_square(us, h1) : relative_square(us, a1);
             Square to_rook = kingside ? relative_square(us, f1) : relative_square(us, d1);
-            type_BB[rook] ^= square_to_bitboard(from_rook);
-            color_BB[us] ^= square_to_bitboard(from_rook);
-            type_BB[rook] ^= square_to_bitboard(to_rook);
-            color_BB[us] ^= square_to_bitboard(to_rook);
-            board_mailbox[from_rook] = no_piece;
-            board_mailbox[to_rook] = us == white ? white_rook : black_rook;
+            move_piece(from_rook, to_rook);
         }
     }
 
@@ -129,4 +210,38 @@ void Position::make_move(Move m) {
 
 void Position::unmake_move(Move m) {
 
+}
+
+void Position::move_piece(Square from, Square to) {
+    Piece piece = board_mailbox[from];
+    PieceType type = type_of(piece);
+    Color color = color_of(piece);
+    Bitboard from_to = square_to_bitboard(from) | square_to_bitboard(to);
+
+    type_BB[all_pieces] ^= from_to;
+    type_BB[type] ^= from_to;
+    color_BB[color] ^= from_to;
+    board_mailbox[from] = no_piece;
+    board_mailbox[to] = piece;
+}
+void Position::put_piece(Square to, Piece piece) {
+    PieceType type = type_of(piece);
+    Color color = color_of(piece);
+    Bitboard to_mask = square_to_bitboard(to);
+
+    type_BB[all_pieces] ^= to_mask;
+    type_BB[type] ^= to_mask;
+    color_BB[color] ^= to_mask;
+    board_mailbox[to] = piece;
+}
+void Position::remove_piece(Square from) {
+    Piece piece = board_mailbox[from];
+    PieceType type = type_of(piece);
+    Color color = color_of(piece);
+    Bitboard from_mask = square_to_bitboard(from);
+
+    type_BB[all_pieces] ^= from_mask;
+    type_BB[type] ^= from_mask;
+    color_BB[color] ^= from_mask;
+    board_mailbox[from] = no_piece;
 }

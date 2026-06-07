@@ -16,6 +16,7 @@ enum Square : uint8_t {
     a6, b6, c6, d6, e6, f6, g6, h6,
     a7, b7, c7, d7, e7, f7, g7, h7,
     a8, b8, c8, d8, e8, f8, g8, h8,
+    square_num = 64
 };
 
 enum Direction : int8_t {
@@ -75,7 +76,7 @@ enum CastleRights : uint8_t {
 // Bits 12-13: promotion piece type (0..3) (knight, bishop, rook, queen)
 // Bit 14-15: special move flag (0..3) (quiet, promotion, castle, en passant)
 
-enum MoveType : uint8_t {
+enum MoveType : uint16_t {
     quiet_move,
     promotion = 1 << 14,
     en_passant = 2 << 14,
@@ -90,7 +91,8 @@ enum PieceType : uint8_t {
     rook,
     queen,
     king,
-    piece_type_num = 6
+    all_pieces = 0, // Stores every piece
+    piece_type_num = 7
 };
 
 enum Piece : uint8_t {

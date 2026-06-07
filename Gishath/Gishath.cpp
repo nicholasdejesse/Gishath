@@ -9,6 +9,8 @@ int main()
     // TODO: Precompute any expensive stuff here (e.g. attack bitboards)
 
     Position pos = Position();
+    pos.load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    pos.make_move(Move(a2, a3, 0));
     std::cout << pos.to_string();
 }
 
