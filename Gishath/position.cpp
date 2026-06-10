@@ -6,7 +6,7 @@
 Position::Position() : board_mailbox{}, type_BB{}, color_BB{}, white_to_move(true), castle_rights(WK | WQ | BK | BQ), halfmove_clock(0), fullmove_clock(1), en_passant_file(-1) {}
 
 void Position::load_fen(std::string fen) {
-    for (int i = 0; i < SQUARE_NUM; ++i) {
+    for (int i = 0; i < square_num; ++i) {
         board_mailbox[i] = no_piece;
     }
     for (int i = 0; i < piece_type_num; ++i) {

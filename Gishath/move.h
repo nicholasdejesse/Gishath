@@ -1,10 +1,14 @@
 #pragma once
 #include <string>
+
 #include "types.h"
 
 class Move {
 public:
-    Move(unsigned int from, unsigned int to, unsigned int flags);
+    Move(uint16_t data);
+    Move(unsigned int from, unsigned int to);
+    Move(unsigned int from, unsigned int to, MoveType move_type, PieceType promotion_type = knight);
+
     Square get_from();
     Square get_to();
     void set_to(Square to);
@@ -17,6 +21,6 @@ public:
     bool operator==(Move a) const;
     bool operator!=(Move a) const;
 
-protected:
-    unsigned int m_Move;
+private:
+    uint16_t m_Move;
 };

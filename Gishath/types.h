@@ -4,8 +4,6 @@
 // Includes enums and generic checks related to them
 
 typedef unsigned long long Bitboard;
-constexpr int SQUARE_NUM = 64;
-
 
 enum Square : uint8_t {
     a1, b1, c1, d1, e1, f1, g1, h1,
@@ -63,6 +61,28 @@ enum Rank : uint8_t {
     rank_8
 };
 
+enum FileBB : Bitboard {
+    file_a_bb = 0x0101010101010101,
+    file_b_bb = file_a_bb << 1,
+    file_c_bb = file_a_bb << 2,
+    file_d_bb = file_a_bb << 3,
+    file_e_bb = file_a_bb << 4,
+    file_f_bb = file_a_bb << 5,
+    file_g_bb = file_a_bb << 6,
+    file_h_bb = file_a_bb << 7
+};
+
+enum RankBB : Bitboard {
+    rank_1_bb = 0xFF,
+    rank_2_bb = rank_1_bb << 8,
+    rank_3_bb = rank_1_bb << 16,
+    rank_4_bb = rank_1_bb << 24,
+    rank_5_bb = rank_1_bb << 32,
+    rank_6_bb = rank_1_bb << 40,
+    rank_7_bb = rank_1_bb << 48,
+    rank_8_bb = rank_1_bb << 56
+};
+
 enum CastleRights : uint8_t {
     WK = 1,
     WQ = 2,
@@ -77,7 +97,7 @@ enum CastleRights : uint8_t {
 // Bit 14-15: special move flag (0..3) (quiet, promotion, castle, en passant)
 
 enum MoveType : uint16_t {
-    quiet_move,
+    normal,
     promotion = 1 << 14,
     en_passant = 2 << 14,
     castle = 3 << 14,
@@ -140,5 +160,13 @@ constexpr Rank rank_of(Square sq) {
 }
 
 constexpr File file_of(Square sq) {
-    return File(sq % 8);
+    return File(sq & 7);
+}
+
+constexpr RankBB rank_bb_of(Square sq) {
+    return RankBB(rank_1_bb << (8 * rank_of(sq)));
+}
+
+constexpr FileBB file_bb_of(Square sq) {
+    return FileBB(file_a_bb << file_of(sq));
 }

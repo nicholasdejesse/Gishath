@@ -6,7 +6,7 @@
 
 class Position {
 private:
-    Piece board_mailbox[SQUARE_NUM];
+    Piece board_mailbox[square_num];
     Bitboard type_BB[piece_type_num];
     Bitboard color_BB[color_num];
     bool white_to_move;
