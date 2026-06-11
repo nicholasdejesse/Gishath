@@ -133,6 +133,19 @@ std::string Position::to_string() {
     return str;
 }
 
+constexpr int Position::unmake_index() const {
+    return 2 * (fullmove_clock - 1) + (1 - white_to_move);
+}
+
+struct UnmakeInfo {
+    Piece captured_piece;
+    uint8_t castle_rights;
+    uint8_t halfmove_clock;
+    int8_t en_passant_file;
+};
+
+std::array<UnmakeInfo, max_ply> unmake_stack; // Store history, get index through side to move and fullmove clock
+
 void Position::make_move(Move m) {
     Square from = m.get_from();
     Square to = m.get_to();
@@ -145,6 +158,9 @@ void Position::make_move(Move m) {
     Bitboard from_mask = square_to_bitboard(from);
     Bitboard to_mask = square_to_bitboard(to);
 
+    UnmakeInfo unmake = UnmakeInfo{ captured_piece, castle_rights, halfmove_clock, en_passant_file };
+    unmake_stack[unmake_index()] = unmake;
+
     ++halfmove_clock;
     en_passant_file = -1;
     if (!white_to_move) {
@@ -153,15 +169,14 @@ void Position::make_move(Move m) {
 
     remove_piece(from);
     if (captured_piece != no_piece) {
+        halfmove_clock = 0;
         if (move_type == en_passant) {
-            Square pawn_pos = to - relative_direction(us, south);
+            Square pawn_pos = to + relative_direction(us, south);
             remove_piece(pawn_pos);
-            halfmove_clock = 0;
         }
         else {
             PieceType captured_type = type_of(captured_piece);
             remove_piece(to);
-            halfmove_clock = 0;
             if (captured_type == rook) {
                 if (to == relative_square(them, h1)) {
                     castle_rights &= ~(them == white ? WK : BK);
@@ -209,6 +224,47 @@ void Position::make_move(Move m) {
 }
 
 void Position::unmake_move(Move m) {
+    Square from = m.get_from();
+    Square to = m.get_to();
+    Piece piece = board_mailbox[to];
+    PieceType type = type_of(piece);
+    Color us = color_of(piece);
+    Color them = Color(1 - us);
+    MoveType move_type = m.type_of();
+    Bitboard from_mask = square_to_bitboard(from);
+    Bitboard to_mask = square_to_bitboard(to);
+    Piece piece_to_restore = m.type_of() == promotion ? make_piece(us, pawn) : piece;
+
+    // Need to do this first so we can get correct index
+    white_to_move = !white_to_move;
+    if (!white_to_move) {
+        --fullmove_clock;
+    }
+
+    UnmakeInfo unmake_info = unmake_stack[unmake_index()];
+
+    halfmove_clock = unmake_info.halfmove_clock;
+    en_passant_file = unmake_info.en_passant_file;
+    castle_rights = unmake_info.castle_rights;
+
+    remove_piece(to);
+    if (unmake_info.captured_piece != no_piece) {
+        if (move_type == en_passant) {
+            Square pawn_pos = to + relative_direction(us, south);
+            put_piece(pawn_pos, unmake_info.captured_piece);
+        }
+        else {
+            put_piece(to, unmake_info.captured_piece);
+        }
+    }
+
+    put_piece(from, piece_to_restore);
+    if (move_type == castle) {
+        bool kingside = (relative_square(us, to) == g1);
+        Square from_rook = kingside ? relative_square(us, h1) : relative_square(us, a1);
+        Square to_rook = kingside ? relative_square(us, f1) : relative_square(us, d1);
+        move_piece(to_rook, from_rook);
+    }
 
 }
 

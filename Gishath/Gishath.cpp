@@ -5,6 +5,7 @@
 #include "position.h"
 #include "attacks.h"
 #include "magics.h"
+#include "types.h"
 
 int main()
 {
@@ -14,14 +15,22 @@ int main()
     std::cout << "Initialization complete.\n";
 
     // Magic tests
-    Bitboard occ = 61581912178704;
-    Square sq = a1;
-    std::cout << get_rook_attacks(sq, occ) << "\n";
-    std::cout << get_bishop_attacks(sq, occ) << "\n";
+    //Bitboard occ = 61581912178704;
+    //Square sq = a1;
+    //std::cout << get_rook_attacks(sq, occ) << "\n";
+    //std::cout << get_bishop_attacks(sq, occ) << "\n";
 
     Position pos = Position();
     pos.load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    pos.make_move(Move(a2, a3));
+    //pos.make_move(Move(e2, e4));
+    //pos.make_move(Move(d7, d5));
+    //pos.make_move(Move(e4, e5));
+    //pos.make_move(Move(f7, f5));
+    //pos.make_move(Move(e5, f6, en_passant));
+    //pos.unmake_move(Move(e5, f6, en_passant));
+    //pos.unmake_move(Move(e4, d5));
+    //pos.unmake_move(Move(d7, d5));
+    //pos.unmake_move(Move(e2, e4));
     std::cout << pos.to_string();
 }
 

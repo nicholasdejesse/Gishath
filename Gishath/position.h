@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <cmath>
+#include <array>
 #include "move.h"
 #include "types.h"
 
@@ -18,6 +19,7 @@ private:
     void move_piece(Square from, Square to);
     void put_piece(Square to, Piece piece);
     void remove_piece(Square from);
+    constexpr int unmake_index() const;
 
 public:
     //void SetFromFen(std::string fen);
