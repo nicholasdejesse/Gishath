@@ -6,8 +6,8 @@ std::array<std::array<Bitboard, 4096>, square_num> rook_attacks;
 std::array<Magic, square_num> bishop_magics;
 std::array<Magic, square_num> rook_magics;
 
-int magic_index(Bitboard blockers, Bitboard magic, int shift_amt) {
-    return static_cast<int>((blockers * magic) >> (shift_amt));
+Bitboard magic_index(Bitboard blockers, Bitboard magic, int shift_amt) {
+    return Bitboard((blockers * magic) >> (shift_amt));
 }
 
 template<PieceType T>
@@ -32,7 +32,7 @@ auto try_make_table(std::array<Bitboard, T == bishop ? 1 << 9 : 1 << 12>& table,
 
 template <PieceType T>
 std::array<Magic, square_num> find_magics() {
-    std::array<Magic, square_num> magics;
+    std::array<Magic, square_num> magics{};
     // Initialize RNG
     std::random_device rd;
     std::mt19937_64 gen(rd());
@@ -44,8 +44,9 @@ std::array<Magic, square_num> find_magics() {
 
     for (int i = 0; i < square_num; ++i) {
         Square sq = Square(i);
+        Bitboard mask = sliding_attacks(Square(i), T, 0);
         Bitboard edge_mask = ((file_a_bb | file_h_bb) & ~file_bb_of(sq)) | ((rank_1_bb | rank_8_bb) & ~rank_bb_of(sq));
-        Bitboard mask = sliding_attacks(Square(i), T, edge_mask);
+        mask &= ~edge_mask;
 
         std::vector<Bitboard> blocker_subsets;
         std::vector<Bitboard> attack_masks;
@@ -60,7 +61,6 @@ std::array<Magic, square_num> find_magics() {
             attack_masks.push_back(sliding_attacks(sq, T, blockers));
             blockers = (blockers - mask) & mask;
         } while (blockers);
-
 
         bool found_magic = false;
         do {
@@ -87,7 +87,7 @@ void init_magics() {
 
 Bitboard get_bishop_attacks(Square sq, Bitboard blockers) {
     Magic magic_entry = bishop_magics[sq];
-    int magic_idx = magic_index(blockers & magic_entry.mask, magic_entry.magic, magic_entry.shift_amt);
+    Bitboard magic_idx = magic_index(blockers & magic_entry.mask, magic_entry.magic, magic_entry.shift_amt);
     return bishop_attacks[sq][magic_idx];
 }
 

@@ -13,6 +13,12 @@ int main()
 
     std::cout << "Initialization complete.\n";
 
+    // Magic tests
+    Bitboard occ = 61581912178704;
+    Square sq = a1;
+    std::cout << get_rook_attacks(sq, occ) << "\n";
+    std::cout << get_bishop_attacks(sq, occ) << "\n";
+
     Position pos = Position();
     pos.load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     pos.make_move(Move(a2, a3));

@@ -44,15 +44,17 @@ constexpr Bitboard king_attacks(Bitboard sq) {
     return attack;
 }
 
-constexpr Bitboard sliding_attacks(Square sq, PieceType piece_type, Bitboard occ) {
-    std::array<Direction, 4> directions = (piece_type == bishop) ? std::array{ north_east, north_west, south_east, south_west } : std::array{ north, east, south, west };
+constexpr Bitboard sliding_attacks(Square sq, PieceType pt, Bitboard occ) {
+    constexpr auto bishop_directions = std::array{ north_east, north_west, south_east, south_west };
+    constexpr auto rook_directions = std::array{ north, east, south, west };
     
     Bitboard attack = 0;
 
-    for (Direction d : directions) {
+    for (Direction d : pt == bishop ? bishop_directions : rook_directions) {
         Bitboard ray = shift_BB(square_to_bitboard(sq), d);
-        while (ray & ~occ) {
+        while (ray) {
             attack |= ray;
+            if (ray & occ) break;
             ray = shift_BB(ray, d);
         }
     }
