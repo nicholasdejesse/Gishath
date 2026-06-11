@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-
+#include <iostream>
 #include "types.h"
 
 class Move {
@@ -9,8 +9,8 @@ public:
     Move(unsigned int from, unsigned int to);
     Move(unsigned int from, unsigned int to, MoveType move_type, PieceType promotion_type = knight);
 
-    Square get_from();
-    Square get_to();
+    Square get_from() const;
+    Square get_to() const;
     void set_to(Square to);
     void set_from(Square from);
 
@@ -24,3 +24,5 @@ public:
 private:
     uint16_t m_Move;
 };
+
+std::ostream& operator<< (std::ostream& stream, const Move& move);
