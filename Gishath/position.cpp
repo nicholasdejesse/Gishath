@@ -303,23 +303,43 @@ void Position::remove_piece(Square from) {
 Color Position::to_move() const {
     return white_to_move ? white : black;
 }
+// Returns true if square is attacked by other side (not us)
+bool Position::is_attacked(Square sq, Color us) {
+    Bitboard friendly_pieces = color_BB[us];
+    Bitboard enemy_pieces = color_BB[Color(1 - us)];
+    Bitboard occ = pieces();
+
+    return (get_attacks(us, pawn, sq, occ)   & type_BB[pawn]   & enemy_pieces)
+        || (get_attacks(us, knight, sq, occ) & type_BB[knight] & enemy_pieces)
+        || (get_attacks(us, bishop, sq, occ) & type_BB[bishop] & enemy_pieces)
+        || (get_attacks(us, rook, sq, occ)   & type_BB[rook]   & enemy_pieces)
+        || (get_attacks(us, queen, sq, occ)  & type_BB[queen]  & enemy_pieces)
+        || (get_attacks(us, king, sq, occ)   & type_BB[king]   & enemy_pieces);
+}
 bool Position::is_checked(Color us) {
     // Need to change to be faster later
     Square friendly_king = get_lsb(type_BB[king] & color_BB[us]);
-    Bitboard friendly_pieces = color_BB[us];
-    Bitboard enemy_pieces = color_BB[Color(1-us)];
-    Bitboard occ = type_BB[all_pieces];
-
-    Bitboard any_attacks = (get_attacks(us, pawn, friendly_king, occ) & type_BB[pawn])
-        | (get_attacks(us, knight, friendly_king, occ) & type_BB[knight])
-        | (get_attacks(us, bishop, friendly_king, occ) & type_BB[bishop])
-        | (get_attacks(us, rook, friendly_king, occ) & type_BB[rook])
-        | (get_attacks(us, queen, friendly_king, occ) & type_BB[queen])
-        | (get_attacks(us, king, friendly_king, occ) & type_BB[king]);
-    return any_attacks & enemy_pieces;
+    return is_attacked(friendly_king, us);
 }
 // Returns true if the position is legal
 bool Position::legal() {
     Color just_moved = Color(white_to_move ? black : white);
     return !is_checked(just_moved);
+}
+// Returns the squares that enemies attacking the king reside on and rays to block them
+Bitboard Position::dangerous(Color us) {
+    Color them = Color(1 - us);
+    Bitboard friendly_king = color_BB[us] & type_BB[king];
+    Bitboard occ = pieces() & ~friendly_king; // Remove king so it doesn't block sliding pieces
+    Bitboard enemies = color_BB[them];
+
+    return (get_attacks(them, pawn, type_BB[pawn] & enemies, occ))
+        | (get_attacks(them, knight, type_BB[knight] & enemies, occ))
+        | (get_attacks(them, bishop, type_BB[bishop] & enemies, occ))
+        | (get_attacks(them, rook, type_BB[rook] & enemies, occ))
+        | (get_attacks(them, queen, type_BB[queen] & enemies, occ))
+        | (get_attacks(them, king, type_BB[king] & enemies, occ));
+}
+Bitboard Position::pieces() {
+    return type_BB[all_pieces];
 }

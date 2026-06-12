@@ -127,9 +127,11 @@ constexpr Color color_of(Piece p) {
 constexpr PieceType type_of(Piece p) {
     return PieceType(p & 7); // Look at bits associated with piece type
 }
-
-constexpr Square relative_square(Color c, Square sq) {
-    return Square(sq ^ (c * 56)); // xor with 56 flips board
+constexpr Bitboard relative_bb(Color us, Bitboard bb) {
+    return bb ^ (us * Bitboard(56));
+}
+constexpr Square relative_square(Color us, Square sq) {
+    return Square(sq ^ (us * 56)); // xor with 56 flips board
 }
 
 constexpr Direction relative_direction(Color c, Direction dir) {

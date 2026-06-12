@@ -5,6 +5,7 @@
 #include "types.h"
 #include "attacks.h"
 #include <array>
+#include <cassert>
 
 struct MoveList {
     std::array<Move, move_list_size> moves;

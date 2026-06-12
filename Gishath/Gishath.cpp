@@ -18,11 +18,11 @@ int main()
     //std::cout << get_bishop_attacks(sq, occ) << "\n";
 
     Position pos = Position();
-    //pos.load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    pos.load_fen("rnbq1k1r/1p1Pbppp/p1p5/8/2B5/P7/1PP1NnPP/RNBQK2R w KQ - 0 1");
+    pos.load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    //pos.load_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8");
     std::cout << pos.to_string();
 
-    run_perft(pos, 2);
+    run_perft(pos, 5);
 
     //std::cout << "Board after perft: \n" << pos.to_string();
 }

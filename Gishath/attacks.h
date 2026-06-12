@@ -65,6 +65,7 @@ constexpr Bitboard sliding_attacks(Square bb, PieceType pt, Bitboard occ) {
 }
 
 Bitboard get_attacks(Color us, PieceType pt, Square from, Bitboard occ);
+Bitboard get_attacks(Color us, PieceType pt, Bitboard from, Bitboard occ);
 
 // Get attacks on an empty board
 //constexpr auto pseudo_attacks = []() constexpr {
