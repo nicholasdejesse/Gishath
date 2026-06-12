@@ -21,9 +21,9 @@ public:
     void operator=(Move a);
     bool operator==(Move a) const;
     bool operator!=(Move a) const;
+    std::string to_string();
 
 private:
     uint16_t m_Move;
 };
 
-std::ostream& operator<< (std::ostream& stream, const Move& move);

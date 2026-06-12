@@ -32,10 +32,25 @@ bool Move::operator==(Move a) const { return (m_Move & 0xffff) == (a.m_Move & 0x
 
 bool Move::operator!=(Move a) const { return (m_Move & 0xffff) != (a.m_Move & 0xffff); }
 
-std::ostream& operator<< (std::ostream& stream, const Move& move) {
+std::string Move::to_string() {
     std::string files = "abcdefgh";
     std::string ranks = "12345678";
-    stream << files[file_of(move.get_from())] << ranks[rank_of(move.get_from())] << files[file_of(move.get_to())] << ranks[rank_of(move.get_to())];
-
-    return stream;
+    std::string res{ files[file_of(get_from())], ranks[rank_of(get_from())], files[file_of(get_to())], ranks[rank_of(get_to())] };
+    if (type_of() == promotion) {
+        switch (get_promotion_piece_type()) {
+        case knight:
+            res += 'n';
+            break;
+        case bishop:
+            res += 'b';
+            break;
+        case rook:
+            res += 'r';
+            break;
+        case queen:
+            res += 'q';
+            break;
+        }
+    }
+    return res;
 }

@@ -116,6 +116,10 @@ constexpr Piece make_piece(Color c, PieceType pt) {
     return Piece((c << 3) | pt);
 }
 
+constexpr Square make_square(int rank, int file) {
+    return Square(8 * rank + file);
+}
+
 constexpr Color color_of(Piece p) {
     return Color(p >> 3);
 }

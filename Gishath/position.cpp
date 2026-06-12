@@ -189,7 +189,7 @@ void Position::make_move(Move m) {
     }
 
     if (type == king) {
-        castle_rights = 0;
+        castle_rights &= ~(us == white ? (WK | WQ) : (BK | BQ));
     }
     else if (type == pawn) {
         halfmove_clock = 0;
@@ -265,7 +265,6 @@ void Position::unmake_move(Move m) {
         Square to_rook = kingside ? relative_square(us, f1) : relative_square(us, d1);
         move_piece(to_rook, from_rook);
     }
-
 }
 
 void Position::move_piece(Square from, Square to) {
@@ -309,12 +308,18 @@ bool Position::is_checked(Color us) {
     Square friendly_king = get_lsb(type_BB[king] & color_BB[us]);
     Bitboard friendly_pieces = color_BB[us];
     Bitboard enemy_pieces = color_BB[Color(1-us)];
+    Bitboard occ = type_BB[all_pieces];
 
-    Bitboard any_attacks = (get_attacks(us, pawn, friendly_king, friendly_pieces) & type_BB[pawn])
-        | (get_attacks(us, knight, friendly_king, friendly_pieces) & type_BB[knight])
-        | (get_attacks(us, bishop, friendly_king, friendly_pieces) & type_BB[bishop])
-        | (get_attacks(us, rook, friendly_king, friendly_pieces) & type_BB[rook])
-        | (get_attacks(us, queen, friendly_king, friendly_pieces) & type_BB[queen])
-        | (get_attacks(us, king, friendly_king, friendly_pieces) & type_BB[king]);
+    Bitboard any_attacks = (get_attacks(us, pawn, friendly_king, occ) & type_BB[pawn])
+        | (get_attacks(us, knight, friendly_king, occ) & type_BB[knight])
+        | (get_attacks(us, bishop, friendly_king, occ) & type_BB[bishop])
+        | (get_attacks(us, rook, friendly_king, occ) & type_BB[rook])
+        | (get_attacks(us, queen, friendly_king, occ) & type_BB[queen])
+        | (get_attacks(us, king, friendly_king, occ) & type_BB[king]);
     return any_attacks & enemy_pieces;
+}
+// Returns true if the position is legal
+bool Position::legal() {
+    Color just_moved = Color(white_to_move ? black : white);
+    return !is_checked(just_moved);
 }
