@@ -301,3 +301,6 @@ void Position::remove_piece(Square from) {
     color_BB[color] ^= from_mask;
     board_mailbox[from] = no_piece;
 }
+Color Position::to_move() const {
+    return white_to_move ? white : black;
+}

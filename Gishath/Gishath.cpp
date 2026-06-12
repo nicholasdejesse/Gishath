@@ -3,9 +3,8 @@
 
 #include <iostream>
 #include "position.h"
-#include "attacks.h"
 #include "magics.h"
-#include "types.h"
+#include "movegen.h"
 
 int main()
 {
@@ -32,6 +31,12 @@ int main()
     //pos.unmake_move(Move(d7, d5));
     //pos.unmake_move(Move(e2, e4));
     std::cout << pos.to_string();
+
+    MoveList moves;
+    generate(pos, moves);
+    for (int i = 0; i < moves.count; ++i) {
+        std::cout << moves.moves[i] << " ";
+    }
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu

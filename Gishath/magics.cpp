@@ -16,7 +16,7 @@ auto try_make_table(std::array<Bitboard, T == bishop ? 1 << 9 : 1 << 12>& table,
     int current_epoch,
     Magic magic_entry, Square sq, std::vector<Bitboard>& blocker_subsets, std::vector<Bitboard>& attack_masks) {
     for (size_t i = 0; i < blocker_subsets.size(); ++i) {
-        int magic_idx = magic_index(blocker_subsets[i], magic_entry.magic, magic_entry.shift_amt);
+        Bitboard magic_idx = magic_index(blocker_subsets[i], magic_entry.magic, magic_entry.shift_amt);
         Bitboard attacks = attack_masks[i];
         if (epoch[magic_idx] != current_epoch) {
             table[magic_idx] = attacks;
@@ -45,7 +45,7 @@ std::array<Magic, square_num> find_magics() {
     for (int i = 0; i < square_num; ++i) {
         Square sq = Square(i);
         Bitboard mask = sliding_attacks(Square(i), T, 0);
-        Bitboard edge_mask = ((file_a_bb | file_h_bb) & ~file_bb_of(sq)) | ((rank_1_bb | rank_8_bb) & ~rank_bb_of(sq));
+        Bitboard edge_mask = ((file_bb_of(file_a) | file_bb_of(file_h)) & ~file_bb_of(sq)) | ((rank_bb_of(rank_1) | rank_bb_of(rank_8)) & ~rank_bb_of(sq));
         mask &= ~edge_mask;
 
         std::vector<Bitboard> blocker_subsets;
@@ -85,14 +85,14 @@ void init_magics() {
     rook_magics = find_magics<rook>();
 }
 
-Bitboard get_bishop_attacks(Square sq, Bitboard blockers) {
+Bitboard get_bishop_attacks_raw(Square sq, Bitboard blockers) {
     Magic magic_entry = bishop_magics[sq];
     Bitboard magic_idx = magic_index(blockers & magic_entry.mask, magic_entry.magic, magic_entry.shift_amt);
     return bishop_attacks[sq][magic_idx];
 }
 
-Bitboard get_rook_attacks(Square sq, Bitboard blockers) {
+Bitboard get_rook_attacks_raw(Square sq, Bitboard blockers) {
     Magic magic_entry = rook_magics[sq];
-    int magic_idx = magic_index(blockers & magic_entry.mask, magic_entry.magic, magic_entry.shift_amt);
+    Bitboard magic_idx = magic_index(blockers & magic_entry.mask, magic_entry.magic, magic_entry.shift_amt);
     return rook_attacks[sq][magic_idx];
 }

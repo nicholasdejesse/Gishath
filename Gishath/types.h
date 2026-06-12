@@ -6,6 +6,7 @@
 typedef unsigned long long Bitboard;
 
 constexpr int max_ply = 256; // Max ply for search
+constexpr int move_list_size = 256;
 
 enum Square : uint8_t {
     a1, b1, c1, d1, e1, f1, g1, h1,
@@ -61,28 +62,6 @@ enum Rank : uint8_t {
     rank_6,
     rank_7,
     rank_8
-};
-
-enum FileBB : Bitboard {
-    file_a_bb = 0x0101010101010101,
-    file_b_bb = file_a_bb << 1,
-    file_c_bb = file_a_bb << 2,
-    file_d_bb = file_a_bb << 3,
-    file_e_bb = file_a_bb << 4,
-    file_f_bb = file_a_bb << 5,
-    file_g_bb = file_a_bb << 6,
-    file_h_bb = file_a_bb << 7
-};
-
-enum RankBB : Bitboard {
-    rank_1_bb = 0xFF,
-    rank_2_bb = rank_1_bb << 8,
-    rank_3_bb = rank_1_bb << 16,
-    rank_4_bb = rank_1_bb << 24,
-    rank_5_bb = rank_1_bb << 32,
-    rank_6_bb = rank_1_bb << 40,
-    rank_7_bb = rank_1_bb << 48,
-    rank_8_bb = rank_1_bb << 56
 };
 
 enum CastleRights : uint8_t {
@@ -165,10 +144,22 @@ constexpr File file_of(Square sq) {
     return File(sq & 7);
 }
 
-constexpr RankBB rank_bb_of(Square sq) {
-    return RankBB(rank_1_bb << (8 * rank_of(sq)));
+constexpr Bitboard rank_bb_of(Square sq) {
+    return Bitboard(0xFF) << (8 * rank_of(sq));
 }
 
-constexpr FileBB file_bb_of(Square sq) {
-    return FileBB(file_a_bb << file_of(sq));
+constexpr Bitboard file_bb_of(Square sq) {
+    return Bitboard(0x0101010101010101) << file_of(sq);
+}
+
+constexpr Bitboard rank_bb_of(Rank r) {
+    return Bitboard(0xFF) << (8 * r);
+}
+
+constexpr Bitboard file_bb_of(File f) {
+    return Bitboard(0x0101010101010101) << f;
+}
+
+constexpr Rank relative_rank(Color c, Rank r) {
+    return Rank(r ^ (7 * c));
 }

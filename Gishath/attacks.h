@@ -1,26 +1,27 @@
 #pragma once
 #include <array>
+#include "magics.h"
 #include "types.h"
 #include "bitboard.h"
 
-constexpr Bitboard pawn_attacks(Color c, Bitboard sq) {
+constexpr Bitboard pawn_attacks(Color us, Bitboard bb) {
     Bitboard attack = 0;
 
-    attack |= shift_BB(sq, relative_direction(c, north_east));
-    attack |= shift_BB(sq, relative_direction(c, north_west));
+    attack |= shift_BB(bb, relative_direction(us, north_east));
+    attack |= shift_BB(bb, relative_direction(us, north_west));
 
     return attack;
 }
 
-constexpr Bitboard knights_attacks(Bitboard sq) {
+constexpr Bitboard knights_attacks(Bitboard bb) {
     Bitboard attack = 0;
 
-    Bitboard left = shift_BB(sq, west);
-    Bitboard right = shift_BB(sq, east);
+    Bitboard left = shift_BB(bb, west);
+    Bitboard right = shift_BB(bb, east);
     Bitboard leftleft = shift_BB(left, west);
     Bitboard rightright = shift_BB(right, east);
-    Bitboard up = shift_BB(sq, north);
-    Bitboard down = shift_BB(sq, south);
+    Bitboard up = shift_BB(bb, north);
+    Bitboard down = shift_BB(bb, south);
     Bitboard upup = shift_BB(up, north);
     Bitboard downdown = shift_BB(down, south);
 
@@ -36,22 +37,23 @@ constexpr Bitboard knights_attacks(Bitboard sq) {
     return attack;
 }
 
-constexpr Bitboard king_attacks(Bitboard sq) {
+constexpr Bitboard king_attacks(Bitboard bb) {
     Bitboard attack = 0;
     for (Direction d : {north, east, south, west, north_east, north_west, south_east, south_west}) {
-        attack |= shift_BB(sq, Direction(d));
+        attack |= shift_BB(bb, Direction(d));
     }
     return attack;
 }
 
-constexpr Bitboard sliding_attacks(Square sq, PieceType pt, Bitboard occ) {
+// Gives attacks for sliding pieces assuming the board is empty
+constexpr Bitboard sliding_attacks(Square bb, PieceType pt, Bitboard occ) {
     constexpr auto bishop_directions = std::array{ north_east, north_west, south_east, south_west };
     constexpr auto rook_directions = std::array{ north, east, south, west };
     
     Bitboard attack = 0;
 
     for (Direction d : pt == bishop ? bishop_directions : rook_directions) {
-        Bitboard ray = shift_BB(square_to_bitboard(sq), d);
+        Bitboard ray = shift_BB(square_to_bitboard(bb), d);
         while (ray) {
             attack |= ray;
             if (ray & occ) break;
@@ -62,21 +64,23 @@ constexpr Bitboard sliding_attacks(Square sq, PieceType pt, Bitboard occ) {
     return attack;
 }
 
+Bitboard get_attacks(Color us, PieceType pt, Square from, Bitboard occ);
 
 // Get attacks on an empty board
-constexpr auto pseudo_attacks = []() constexpr {
-    std::array<std::array<Bitboard, square_num>, piece_type_num> attacks{};
-
-    for (int i = 0; i < square_num; ++i) {
-        // Weird casting from color to piece type, but it works
-        attacks[white][i] = pawn_attacks(white, square_to_bitboard(Square(i)));
-        attacks[black][i] = pawn_attacks(black, square_to_bitboard(Square(i)));
-        attacks[knight][i] = knights_attacks(square_to_bitboard(Square(i)));
-        attacks[king][i] = king_attacks(square_to_bitboard(Square(i)));
-        attacks[bishop][i] = sliding_attacks(Square(i), bishop, 0);
-        attacks[rook][i] = sliding_attacks(Square(i), rook, 0);
-        attacks[queen][i] = attacks[bishop][i] | attacks[rook][i];
-    }
-
-    return attacks;
-}();
+//constexpr auto pseudo_attacks = []() constexpr {
+//    std::array<std::array<Bitboard, square_num>, piece_type_num> attacks{};
+//
+//    for (int i = 0; i < square_num; ++i) {
+//        // Weird casting from color to piece type, but it works
+//        attacks[white][i] = pawn_attacks(white, square_to_bitboard(Square(i)));
+//        attacks[black][i] = pawn_attacks(black, square_to_bitboard(Square(i)));
+//        attacks[knight][i] = knights_attacks(square_to_bitboard(Square(i)));
+//        attacks[king][i] = king_attacks(square_to_bitboard(Square(i)));
+//        attacks[bishop][i] = sliding_attacks(Square(i), bishop, 0);
+//        attacks[rook][i] = sliding_attacks(Square(i), rook, 0);
+//        attacks[queen][i] = attacks[bishop][i] | attacks[rook][i];
+//    }
+//
+//    return attacks;
+//}();
+//

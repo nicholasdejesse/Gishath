@@ -14,6 +14,5 @@ struct Magic {
 };
 
 void init_magics();
-std::array<Magic, square_num> find_magics();
-Bitboard get_bishop_attacks(Square sq, Bitboard blockers);
-Bitboard get_rook_attacks(Square sq, Bitboard blockers);
+Bitboard get_bishop_attacks_raw(Square sq, Bitboard blockers);
+Bitboard get_rook_attacks_raw(Square sq, Bitboard blockers);

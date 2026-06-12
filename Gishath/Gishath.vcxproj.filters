@@ -33,6 +33,9 @@
     <ClCompile Include="magics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="bitboard.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="position.h">

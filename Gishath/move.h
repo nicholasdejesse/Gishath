@@ -5,6 +5,7 @@
 
 class Move {
 public:
+    Move();
     Move(uint16_t data);
     Move(unsigned int from, unsigned int to);
     Move(unsigned int from, unsigned int to, MoveType move_type, PieceType promotion_type = knight);

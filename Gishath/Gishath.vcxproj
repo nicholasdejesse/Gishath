@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="attacks.cpp" />
+    <ClCompile Include="bitboard.cpp" />
     <ClCompile Include="gishath.cpp" />
     <ClCompile Include="magics.cpp" />
     <ClCompile Include="move.cpp" />
