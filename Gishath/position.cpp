@@ -304,3 +304,17 @@ void Position::remove_piece(Square from) {
 Color Position::to_move() const {
     return white_to_move ? white : black;
 }
+bool Position::is_checked(Color us) {
+    // Need to change to be faster later
+    Square friendly_king = get_lsb(type_BB[king] & color_BB[us]);
+    Bitboard friendly_pieces = color_BB[us];
+    Bitboard enemy_pieces = color_BB[Color(1-us)];
+
+    Bitboard any_attacks = (get_attacks(us, pawn, friendly_king, friendly_pieces) & type_BB[pawn])
+        | (get_attacks(us, knight, friendly_king, friendly_pieces) & type_BB[knight])
+        | (get_attacks(us, bishop, friendly_king, friendly_pieces) & type_BB[bishop])
+        | (get_attacks(us, rook, friendly_king, friendly_pieces) & type_BB[rook])
+        | (get_attacks(us, queen, friendly_king, friendly_pieces) & type_BB[queen])
+        | (get_attacks(us, king, friendly_king, friendly_pieces) & type_BB[king]);
+    return any_attacks & enemy_pieces;
+}

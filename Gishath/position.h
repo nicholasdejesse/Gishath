@@ -4,6 +4,7 @@
 #include <array>
 #include "move.h"
 #include "types.h"
+#include "attacks.h"
 
 class Position {
 private:
@@ -26,6 +27,7 @@ public:
 
     void make_move(Move move);
     void unmake_move(Move move);
+    bool is_checked(Color us);
     Color to_move() const;
     void load_fen(std::string fen);
 

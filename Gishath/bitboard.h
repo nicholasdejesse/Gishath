@@ -21,6 +21,7 @@ constexpr Bitboard pawn_push_BB(Bitboard bb, Color us) {
 }
 
 Square pop_lsb(Bitboard& bb);
+Square get_lsb(Bitboard bb);
 
 constexpr int popcount(Bitboard bb) {
     int count = 0;
