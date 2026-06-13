@@ -31,10 +31,10 @@ enum Direction : int8_t {
     south_west = south + west
 };
 
-inline Square operator+(Square s, Direction d) { return Square(int(s) + int(d)); }
-inline Square operator-(Square s, Direction d) { return Square(int(s) - int(d)); }
-inline Square& operator+=(Square& s, Direction d) { return s = s + d; }
-inline Square& operator-=(Square& s, Direction d) { return s = s - d; }
+constexpr Square operator+(Square s, Direction d) { return Square(int(s) + int(d)); }
+constexpr Square operator-(Square s, Direction d) { return Square(int(s) - int(d)); }
+constexpr Square& operator+=(Square& s, Direction d) { return s = s + d; }
+constexpr Square& operator-=(Square& s, Direction d) { return s = s - d; }
 
 enum Color : uint8_t {
     white,
@@ -128,14 +128,30 @@ constexpr PieceType type_of(Piece p) {
     return PieceType(p & 7); // Look at bits associated with piece type
 }
 constexpr Bitboard relative_bb(Color us, Bitboard bb) {
-    return bb ^ (us * Bitboard(56));
+    return us == white ? bb : ((bb << 56)) |
+        ((bb << 40) & Bitboard(0x00ff000000000000)) |
+        ((bb << 24) & Bitboard(0x0000ff0000000000)) |
+        ((bb << 8) & Bitboard(0x000000ff00000000)) |
+        ((bb >> 8) & Bitboard(0x00000000ff000000)) |
+        ((bb >> 24) & Bitboard(0x0000000000ff0000)) |
+        ((bb >> 40) & Bitboard(0x000000000000ff00)) |
+        ((bb >> 56));
 }
 constexpr Square relative_square(Color us, Square sq) {
     return Square(sq ^ (us * 56)); // xor with 56 flips board
 }
 
 constexpr Direction relative_direction(Color c, Direction dir) {
-    return Direction(dir * (c == white ? 1 : -1)); // flip direction for black
+    if (c == white) return dir;
+    switch (dir) {
+    case north:      return south;
+    case south:      return north;
+    case north_east: return south_east;
+    case north_west: return south_west;
+    case south_east: return north_east;
+    case south_west: return north_west;
+    default:         return dir;
+    }
 }
 
 constexpr Bitboard square_to_bitboard(Square sq) {
@@ -169,3 +185,6 @@ constexpr Bitboard file_bb_of(File f) {
 constexpr Rank relative_rank(Color c, Rank r) {
     return Rank(r ^ (7 * c));
 }
+
+constexpr Square operator+(Square s, int i) { return Square(uint8_t(s) + i); }
+constexpr Square operator-(Square s, int i) { return Square(uint8_t(s) - i); }

@@ -130,21 +130,15 @@ std::string Position::to_string() {
 
     str = str + board + file_markers;
 
+    str += "En passant file: " + std::to_string(en_passant_file) + "\n";
+    str += "Castle rights: " + std::to_string(castle_rights) + "\n";
+
     return str;
 }
 
 constexpr int Position::unmake_index() const {
-    return 2 * (fullmove_clock - 1) + (1 - white_to_move);
+    return ply;
 }
-
-struct UnmakeInfo {
-    Piece captured_piece;
-    uint8_t castle_rights;
-    uint8_t halfmove_clock;
-    int8_t en_passant_file;
-};
-
-std::array<UnmakeInfo, max_ply> unmake_stack; // Store history, get index through side to move and fullmove clock
 
 void Position::make_move(Move m) {
     Square from = m.get_from();
@@ -155,18 +149,16 @@ void Position::make_move(Move m) {
     Color them = Color(1 - us);
     MoveType move_type = m.type_of();
     Piece captured_piece = move_type == en_passant ? make_piece(them, pawn) : board_mailbox[to];
-    Bitboard from_mask = square_to_bitboard(from);
-    Bitboard to_mask = square_to_bitboard(to);
 
     UnmakeInfo unmake = UnmakeInfo{ captured_piece, castle_rights, halfmove_clock, en_passant_file };
     unmake_stack[unmake_index()] = unmake;
+    ++ply;
 
     ++halfmove_clock;
     en_passant_file = -1;
     if (!white_to_move) {
         ++fullmove_clock;
     }
-
     remove_piece(from);
     if (captured_piece != no_piece) {
         halfmove_clock = 0;
@@ -193,7 +185,7 @@ void Position::make_move(Move m) {
     }
     else if (type == pawn) {
         halfmove_clock = 0;
-        if (std::abs(static_cast<int>(to) - static_cast<int>(from)) > north) {
+        if (std::abs(static_cast<int>(rank_of(to)) - static_cast<int>(rank_of(from))) > 1) {
             en_passant_file = file_of(to);
         }
     }
@@ -224,6 +216,7 @@ void Position::make_move(Move m) {
 }
 
 void Position::unmake_move(Move m) {
+    --ply;
     Square from = m.get_from();
     Square to = m.get_to();
     Piece piece = board_mailbox[to];
@@ -231,8 +224,6 @@ void Position::unmake_move(Move m) {
     Color us = color_of(piece);
     Color them = Color(1 - us);
     MoveType move_type = m.type_of();
-    Bitboard from_mask = square_to_bitboard(from);
-    Bitboard to_mask = square_to_bitboard(to);
     Piece piece_to_restore = m.type_of() == promotion ? make_piece(us, pawn) : piece;
 
     // Need to do this first so we can get correct index
@@ -280,6 +271,7 @@ void Position::move_piece(Square from, Square to) {
     board_mailbox[to] = piece;
 }
 void Position::put_piece(Square to, Piece piece) {
+    assert(board_mailbox[to] == no_piece);
     PieceType type = type_of(piece);
     Color color = color_of(piece);
     Bitboard to_mask = square_to_bitboard(to);
@@ -290,6 +282,7 @@ void Position::put_piece(Square to, Piece piece) {
     board_mailbox[to] = piece;
 }
 void Position::remove_piece(Square from) {
+    assert(board_mailbox[from] != no_piece);
     Piece piece = board_mailbox[from];
     PieceType type = type_of(piece);
     Color color = color_of(piece);

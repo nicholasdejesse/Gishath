@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <cmath>
 #include "magics.h"
 #include "types.h"
 #include "bitboard.h"
@@ -13,26 +14,14 @@ constexpr Bitboard pawn_attacks(Color us, Bitboard bb) {
     return attack;
 }
 
-constexpr Bitboard knights_attacks(Bitboard bb) {
+constexpr Bitboard knights_attacks(Square sq) {
     Bitboard attack = 0;
 
-    Bitboard left = shift_BB(bb, west);
-    Bitboard right = shift_BB(bb, east);
-    Bitboard leftleft = shift_BB(left, west);
-    Bitboard rightright = shift_BB(right, east);
-    Bitboard up = shift_BB(bb, north);
-    Bitboard down = shift_BB(bb, south);
-    Bitboard upup = shift_BB(up, north);
-    Bitboard downdown = shift_BB(down, south);
-
-    attack |= shift_BB(leftleft, north);
-    attack |= shift_BB(leftleft, south);
-    attack |= shift_BB(rightright, north);
-    attack |= shift_BB(rightright, south);
-    attack |= shift_BB(upup, east);
-    attack |= shift_BB(upup, west);
-    attack |= shift_BB(downdown, east);
-    attack |= shift_BB(downdown, west);
+    for (int move : {-17, -15, -10, -6, 6, 10, 15, 17}) {
+        Square target = sq + move;
+        Bitboard res = target >= 0 && target < square_num && std::abs(file_of(target) - file_of(sq)) <= 2 ? square_to_bitboard(target) : Bitboard(0);
+        attack |= res;
+    }
 
     return attack;
 }

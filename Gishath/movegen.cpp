@@ -31,26 +31,27 @@ void generate_pawn_moves(Position& pos, MoveList& ml, Color us) {
     Bitboard empty_squares = ~pos.pieces();
     Bitboard enemies = pos.color_BB[them];
     Bitboard promotion_rank = rank_bb_of(relative_rank(us, rank_7));
+    Bitboard promo_pawns = pawns & promotion_rank;
+    Bitboard non_promo_pawns = pawns & ~promotion_rank;
     Bitboard second_push_rank = rank_bb_of(relative_rank(us, rank_3));
-    Bitboard promotion_pawns = pawns & promotion_rank;
     Direction up = relative_direction(us, north);
     Direction up_right = relative_direction(us, north_east);
     Direction up_left = relative_direction(us, north_west);
 
-    Bitboard push_1 = shift_BB(pawns & ~promotion_rank, up) & empty_squares;
+    Bitboard push_1 = shift_BB(non_promo_pawns, up) & empty_squares;
     Bitboard push_2 = shift_BB(push_1 & second_push_rank, up) & empty_squares;
-    Bitboard non_promo_captures_left = shift_BB(pawns & ~promotion_rank, up_left) & enemies;
-    Bitboard non_promo_captures_right = shift_BB(pawns & ~promotion_rank, up_right) & enemies;
+    Bitboard non_promo_captures_left = shift_BB(non_promo_pawns, up_left) & enemies;
+    Bitboard non_promo_captures_right = shift_BB(non_promo_pawns, up_right) & enemies;
 
     put_pawn_moves(ml, push_1, up);
     put_pawn_moves(ml, push_2, up + up);
     put_pawn_moves(ml, non_promo_captures_left, up_left);
     put_pawn_moves(ml, non_promo_captures_right, up_right);
 
-    if (promotion_pawns) {
-        Bitboard promo_push = shift_BB(promotion_pawns, up) & empty_squares;
-        Bitboard promo_capture_left = shift_BB(promotion_pawns, up_left) & enemies;
-        Bitboard promo_capture_right = shift_BB(promotion_pawns, up_right) & enemies;
+    if (promo_pawns) {
+        Bitboard promo_push = shift_BB(promo_pawns, up) & empty_squares;
+        Bitboard promo_capture_left = shift_BB(promo_pawns, up_left) & enemies;
+        Bitboard promo_capture_right = shift_BB(promo_pawns, up_right) & enemies;
 
         put_promotion(ml, promo_push, up);
         put_promotion(ml, promo_capture_left, up_left);
@@ -91,19 +92,15 @@ void generate_king_moves(Position& pos, MoveList& ml, Color us) {
     bool can_kingside = us == white ? pos.castle_rights & WK : pos.castle_rights & BK;
     bool can_queenside = us == white ? pos.castle_rights & WQ : pos.castle_rights & BQ;
     if (can_kingside && can_castle) {
-        Square s1 = relative_square(us, f1);
-        Square s2 = relative_square(us, g1);
-        Square intermediate = relative_square(us, f1);
-        if ((dangerous & intermediate) == 0 && pos.board_mailbox[s1] == no_piece && pos.board_mailbox[s2] == no_piece) {
+        Bitboard castling_sq = relative_bb(us, Bitboard(3) << 5);
+        if ((dangerous & castling_sq) == 0 && (castling_sq & pieces) == 0) {
             ml.push(Move(from, relative_square(us, g1), castle));
         }
     }
     if (can_queenside && can_castle) {
-        Square s1 = relative_square(us, b1);
-        Square s2 = relative_square(us, c1);
-        Square s3 = relative_square(us, d1);
-        Square intermediate = relative_square(us, d1);
-        if ((dangerous & intermediate) == 0 && pos.board_mailbox[s1] == no_piece && pos.board_mailbox[s2] == no_piece && pos.board_mailbox[s3] == no_piece) {
+        Bitboard castling_sq = relative_bb(us, Bitboard(7) << 1);
+        Bitboard intermediate = relative_bb(us, Bitboard(3) << 2);
+        if ((dangerous & intermediate) == 0 && (castling_sq & pieces) == 0) {
             ml.push(Move(from, relative_square(us, c1), castle));
         }
     }

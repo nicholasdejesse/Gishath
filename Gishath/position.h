@@ -6,12 +6,21 @@
 #include "types.h"
 #include "attacks.h"
 
+struct UnmakeInfo {
+    Piece captured_piece;
+    uint8_t castle_rights;
+    uint8_t halfmove_clock;
+    int8_t en_passant_file;
+};
+
 class Position {
 private:
     void move_piece(Square from, Square to);
     void put_piece(Square to, Piece piece);
     void remove_piece(Square from);
     constexpr int unmake_index() const;
+    int ply = 0;
+    std::array<UnmakeInfo, max_ply> unmake_stack; // Store history, get index through side to move and fullmove clock
 
 public:
     std::array<Piece, square_num> board_mailbox;

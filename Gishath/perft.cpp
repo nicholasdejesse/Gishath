@@ -1,12 +1,11 @@
 #include "perft.h"
 
-int perft_recursive(Position& pos, int depth) {
+uint64_t perft_recursive(Position& pos, int depth) {
     MoveList move_list{};
-    int nodes = 0;
+    uint64_t nodes = 0;
 
-    generate(pos, move_list);
     if (depth == 0) return 1;
-    //if (depth == 1) return move_list.count; // Bulk counting, faster result but not informative
+    generate(pos, move_list);
 
     for (int i = 0; i < move_list.count; i++) {
         pos.make_move(move_list.moves[i]);
@@ -21,12 +20,12 @@ int perft_recursive(Position& pos, int depth) {
 void run_perft(Position& pos, int depth) {
     auto start_time = std::chrono::steady_clock::now();
     MoveList move_list{};
-    int total_nodes = 0;
+    uint64_t total_nodes = 0;
     generate(pos, move_list);
     for (int i = 0; i < move_list.count; i++) {
         pos.make_move(move_list.moves[i]);
         if (pos.legal()) {
-            int res = perft_recursive(pos, depth - 1);
+            uint64_t res = perft_recursive(pos, depth - 1);
             std::cout << move_list.moves[i].to_string() << ": " << res << "\n";
             total_nodes += res;
         }
