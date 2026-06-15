@@ -3,7 +3,7 @@
 #include <sstream>
 #include <cctype>
 
-Position::Position() : board_mailbox{}, type_BB{}, color_BB{}, white_to_move(true), castle_rights(WK | WQ | BK | BQ), halfmove_clock(0), fullmove_clock(1), en_passant_file(-1) {}
+Position::Position() : board_mailbox{}, type_BB{}, color_BB{}, white_to_move(true), castle_rights(WK | WQ | BK | BQ), halfmove_clock(0), fullmove_clock(1), en_passant_file(-1), unmake_stack{} {}
 
 void Position::load_fen(std::string fen) {
     for (int i = 0; i < square_num; ++i) {
@@ -144,7 +144,7 @@ void Position::make_move(Move m) {
     Square from = m.get_from();
     Square to = m.get_to();
     Piece piece = board_mailbox[from];
-    PieceType type = type_of(piece);
+    PieceType type = piecetype_of(piece);
     Color us = color_of(piece);
     Color them = Color(1 - us);
     MoveType move_type = m.type_of();
@@ -167,7 +167,7 @@ void Position::make_move(Move m) {
             remove_piece(pawn_pos);
         }
         else {
-            PieceType captured_type = type_of(captured_piece);
+            PieceType captured_type = piecetype_of(captured_piece);
             remove_piece(to);
             if (captured_type == rook) {
                 if (to == relative_square(them, h1)) {
@@ -220,7 +220,7 @@ void Position::unmake_move(Move m) {
     Square from = m.get_from();
     Square to = m.get_to();
     Piece piece = board_mailbox[to];
-    PieceType type = type_of(piece);
+    PieceType type = piecetype_of(piece);
     Color us = color_of(piece);
     Color them = Color(1 - us);
     MoveType move_type = m.type_of();
@@ -260,7 +260,7 @@ void Position::unmake_move(Move m) {
 
 void Position::move_piece(Square from, Square to) {
     Piece piece = board_mailbox[from];
-    PieceType type = type_of(piece);
+    PieceType type = piecetype_of(piece);
     Color color = color_of(piece);
     Bitboard from_to = square_to_bitboard(from) | square_to_bitboard(to);
 
@@ -272,7 +272,7 @@ void Position::move_piece(Square from, Square to) {
 }
 void Position::put_piece(Square to, Piece piece) {
     assert(board_mailbox[to] == no_piece);
-    PieceType type = type_of(piece);
+    PieceType type = piecetype_of(piece);
     Color color = color_of(piece);
     Bitboard to_mask = square_to_bitboard(to);
 
@@ -284,7 +284,7 @@ void Position::put_piece(Square to, Piece piece) {
 void Position::remove_piece(Square from) {
     assert(board_mailbox[from] != no_piece);
     Piece piece = board_mailbox[from];
-    PieceType type = type_of(piece);
+    PieceType type = piecetype_of(piece);
     Color color = color_of(piece);
     Bitboard from_mask = square_to_bitboard(from);
 

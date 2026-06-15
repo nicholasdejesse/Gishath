@@ -4,7 +4,40 @@ Move::Move() = default;
 Move::Move(uint16_t data) : m_Move(data) {}
 Move::Move(unsigned int from, unsigned int to) : m_Move(((from & 0x3F) << 6) + (to & 0x3F)) {}
 Move::Move(unsigned int from, unsigned int to, MoveType move_type, PieceType promotion_type) : m_Move(move_type + ((promotion_type - knight) << 12) + ((from & 0x3F) << 6) + (to & 0x3F)) {}
+Move::Move(std::string str, Position& pos) {
+    // Parse from/to squares from algebraic notation (e.g. "g7g8q")
+    Square from = Square((str[0] - 'a') + (str[1] - '1') * 8);
+    Square to = Square((str[2] - 'a') + (str[3] - '1') * 8);
 
+    MoveType move_type = normal;
+    PieceType promotion_type = knight; // default, overwritten below if promotion
+
+    Piece moving_piece = pos.board_mailbox[from];
+    PieceType moving_piece_type = piecetype_of(moving_piece);
+
+    // Promotion
+    if (str.length() == 5) {
+        move_type = promotion;
+        switch (str[4]) {
+        case 'q': promotion_type = queen;  break;
+        case 'r': promotion_type = rook;   break;
+        case 'b': promotion_type = bishop; break;
+        case 'n': promotion_type = knight; break;
+        }
+    }
+    // Castling
+    else if (moving_piece_type == king) {
+        if (std::abs(static_cast<int>(file_of(to)) - static_cast<int>(file_of(from))) > 1) {
+            move_type = castle;
+        }
+    }
+    // En passant
+    else if (moving_piece_type == pawn && file_of(from) != file_of(to) && pos.board_mailbox[to] == no_piece) {
+        move_type = en_passant;
+    }
+
+    m_Move = move_type + ((promotion_type - knight) << 12) + ((from & 0x3F) << 6) + (to & 0x3F);
+}
 Square Move::get_from() const {
     return Square((m_Move >> 6) & 0x3F);
 }

@@ -6,11 +6,13 @@
 #include "types.h"
 #include "attacks.h"
 
+class Move;
+
 struct UnmakeInfo {
-    Piece captured_piece;
-    uint8_t castle_rights;
-    uint8_t halfmove_clock;
-    int8_t en_passant_file;
+    Piece captured_piece = no_piece;
+    uint8_t castle_rights = 0;
+    uint8_t halfmove_clock = 0;
+    int8_t en_passant_file = -1;
 };
 
 class Position {

@@ -147,6 +147,8 @@
     <ClCompile Include="movegen.cpp" />
     <ClCompile Include="perft.cpp" />
     <ClCompile Include="position.cpp" />
+    <ClCompile Include="search.cpp" />
+    <ClCompile Include="uci.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="attacks.h" />
@@ -155,8 +157,10 @@
     <ClInclude Include="movegen.h" />
     <ClInclude Include="perft.h" />
     <ClInclude Include="position.h" />
+    <ClInclude Include="search.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="bitboard.h" />
+    <ClInclude Include="uci.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

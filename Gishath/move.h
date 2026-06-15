@@ -2,6 +2,10 @@
 #include <string>
 #include <iostream>
 #include "types.h"
+#include "position.h"
+#include "types.h"
+
+class Position;
 
 class Move {
 public:
@@ -9,6 +13,7 @@ public:
     Move(uint16_t data);
     Move(unsigned int from, unsigned int to);
     Move(unsigned int from, unsigned int to, MoveType move_type, PieceType promotion_type = knight);
+    Move(std::string str, Position& pos);
 
     Square get_from() const;
     Square get_to() const;

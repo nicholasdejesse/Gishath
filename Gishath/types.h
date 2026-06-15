@@ -124,7 +124,7 @@ constexpr Color color_of(Piece p) {
     return Color(p >> 3);
 }
 
-constexpr PieceType type_of(Piece p) {
+constexpr PieceType piecetype_of(Piece p) {
     return PieceType(p & 7); // Look at bits associated with piece type
 }
 constexpr Bitboard relative_bb(Color us, Bitboard bb) {
