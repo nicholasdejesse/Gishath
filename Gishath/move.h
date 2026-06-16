@@ -2,8 +2,6 @@
 #include <string>
 #include <iostream>
 #include "types.h"
-#include "position.h"
-#include "types.h"
 
 class Position;
 

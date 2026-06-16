@@ -5,6 +5,7 @@
 #include "move.h"
 #include "types.h"
 #include "attacks.h"
+#include "movegen.h"
 
 class Move;
 
@@ -46,6 +47,7 @@ public:
     bool legal();
     Color to_move() const;
     void load_fen(std::string fen);
+    bool has_legal_moves();
 
     Position();
 };

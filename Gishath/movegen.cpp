@@ -1,5 +1,12 @@
 #include "movegen.h"
 
+void MoveList::push(Move m) {
+    moves[count++] = m;
+}
+
+MoveList::MoveList() : moves{}, count(0) {}
+
+
 void put_pawn_moves(MoveList& ml, Bitboard to, int8_t offset) {
     // Separate pawn push logic since it's faster to move all pawns at once
     while (to) {
@@ -116,4 +123,9 @@ void generate(Position& pos, MoveList& ml) {
         generate_moves(pos, ml, us, pt);
     }
     generate_king_moves(pos, ml, us);
+}
+MoveList generate(Position& pos) {
+    MoveList ml;
+    generate(pos, ml);
+    return ml;
 }

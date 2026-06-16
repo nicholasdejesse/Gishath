@@ -1,6 +1,16 @@
 #include "eval.h"
 
 int evaluate_position(Position& pos) {
+    // This is a slow way of detecting this, should update later
+    if (!pos.has_legal_moves()) {
+        if (pos.is_checked(pos.white_to_move ? white : black)) {
+            return checkmate_score;
+        }
+        else {
+            return draw_score;
+        }
+    }
+
     std::array<int, 2> mg{};
     std::array<int, 2> eg{};
     int game_phase = 0;
@@ -11,9 +21,9 @@ int evaluate_position(Position& pos) {
             Bitboard bb = pos.color_BB[c] & pos.type_BB[pt];
             while (bb) {
                 Square sq = pop_lsb(bb);
-                mg[c] += mg_table[c * 6 + pt][sq];
-                eg[c] += eg_table[c * 6 + pt][sq];
-                game_phase += game_phase_inc[pt];
+                mg[c] += mg_table[c * 6 + (pt-pawn)][sq];
+                eg[c] += eg_table[c * 6 + (pt-pawn)][sq];
+                game_phase += game_phase_inc[(pt-pawn)];
             }
         }
     }

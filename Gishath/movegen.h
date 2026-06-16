@@ -7,15 +7,16 @@
 #include <array>
 #include <cassert>
 
+class Position;
+
 struct MoveList {
     std::array<Move, move_list_size> moves;
     int count = 0;
 
-    void push(Move m) {
-        moves[count++] = m;
-    }
+    void push(Move m);
 
-    MoveList() : moves{}, count(0) {}
+    MoveList();
 };
 
 void generate(Position& pos, MoveList& ml);
+MoveList generate(Position& pos);

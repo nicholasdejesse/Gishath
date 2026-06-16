@@ -1,4 +1,5 @@
 #include "move.h"
+#include "position.h"
 
 Move::Move() = default;
 Move::Move(uint16_t data) : m_Move(data) {}

@@ -298,6 +298,7 @@ Color Position::to_move() const {
 }
 // Returns true if square is attacked by other side (not us)
 bool Position::is_attacked(Square sq, Color us) {
+    assert(sq <= h8 && sq >= a1);
     Bitboard friendly_pieces = color_BB[us];
     Bitboard enemy_pieces = color_BB[Color(1 - us)];
     Bitboard occ = pieces();
@@ -311,8 +312,22 @@ bool Position::is_attacked(Square sq, Color us) {
 }
 bool Position::is_checked(Color us) {
     // Need to change to be faster later
+    assert((type_BB[king] & color_BB[us]) > 0);
     Square friendly_king = get_lsb(type_BB[king] & color_BB[us]);
     return is_attacked(friendly_king, us);
+}
+bool Position::has_legal_moves() {
+    MoveList ml = generate(*this);
+    if (ml.count == 0) return false;
+    for (int i = 0; i < ml.count; ++i) {
+        make_move(ml.moves[i]);
+        if (legal()) {
+            unmake_move(ml.moves[i]);
+            return true;
+        }
+        unmake_move(ml.moves[i]);
+    }
+    return false;
 }
 // Returns true if the position is legal
 bool Position::legal() {
