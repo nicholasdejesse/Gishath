@@ -2,6 +2,7 @@
 
 int evaluate_position(Position& pos) {
     // This is a slow way of detecting this, should update later
+    if (pos.halfmove_clock >= 100) return draw_score;
     if (!pos.has_legal_moves()) {
         if (pos.is_checked(pos.white_to_move ? white : black)) {
             return checkmate_score;
@@ -36,5 +37,4 @@ int evaluate_position(Position& pos) {
     int egPhase = 24 - mgPhase;
     int color_mult = pos.white_to_move ? 1 : -1;
     return color_mult * (mgScore * mgPhase + egScore * egPhase) / 24;
-
 }
