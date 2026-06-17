@@ -172,7 +172,7 @@ constexpr auto mg_table = []() constexpr {
         for (PieceType pt : {pawn, knight, bishop, rook, queen, king}) {
             for (int i = 0; i < square_num; ++i) {
                 Square sq = Square(i);
-                table[c * 6 + (pt - pawn)][sq] = mg_value[pt - pawn] + mg_pesto_table[pt - pawn][relative_square(c, sq)];
+                table[c * 6 + (pt - pawn)][sq] = mg_value[pt - pawn] + mg_pesto_table[pt - pawn][relative_square(Color(1 - c), sq)];
             }
         }
     }
@@ -187,7 +187,7 @@ constexpr auto eg_table = []() constexpr {
         for (PieceType pt : {pawn, knight, bishop, rook, queen, king}) {
             for (int i = 0; i < square_num; ++i) {
                 Square sq = Square(i);
-                table[c * 6 + (pt - pawn)][sq] = eg_value[pt - pawn] + eg_pesto_table[pt - pawn][relative_square(c, sq)];
+                table[c * 6 + (pt - pawn)][sq] = eg_value[pt - pawn] + eg_pesto_table[pt - pawn][relative_square(Color(1 - c), sq)];
             }
         }
     }

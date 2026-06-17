@@ -9,7 +9,7 @@ typedef unsigned long long Bitboard;
 constexpr int max_ply = 256; // Max ply for search
 constexpr int move_list_size = 256;
 
-constexpr int checkmate_score = 999;
+constexpr int checkmate_score = -999;
 constexpr int draw_score = 0;
 constexpr int min_eval_score = std::numeric_limits<int>::min();
 
@@ -157,6 +157,10 @@ constexpr Direction relative_direction(Color c, Direction dir) {
     case south_west: return north_west;
     default:         return dir;
     }
+}
+
+constexpr Square mirror_square_horizontally(Square sq) {
+    return Square(sq ^ 7);
 }
 
 constexpr Bitboard square_to_bitboard(Square sq) {
