@@ -142,6 +142,7 @@
     <ClCompile Include="attacks.cpp" />
     <ClCompile Include="bitboard.cpp" />
     <ClCompile Include="eval.cpp" />
+    <ClCompile Include="gamehistory.cpp" />
     <ClCompile Include="gishath.cpp" />
     <ClCompile Include="magics.cpp" />
     <ClCompile Include="move.cpp" />
@@ -155,6 +156,7 @@
   <ItemGroup>
     <ClInclude Include="attacks.h" />
     <ClInclude Include="eval.h" />
+    <ClInclude Include="gamehistory.h" />
     <ClInclude Include="magics.h" />
     <ClInclude Include="move.h" />
     <ClInclude Include="movegen.h" />

@@ -105,6 +105,9 @@ void Position::load_fen(std::string fen) {
     
     // 6. Fullmove clock
     fullmove_clock = fullmoves;
+
+    // Load to game history
+    history.push(zobrist, false);
 }
 
 std::string Position::to_string() {
@@ -161,6 +164,7 @@ void Position::make_move(Move m) {
     UnmakeInfo unmake = UnmakeInfo{ captured_piece, castle_rights, halfmove_clock, en_passant_file };
     unmake_stack[unmake_index()] = unmake;
     ++ply;
+    bool is_reversible = true;
 
     ++halfmove_clock;
     if (en_passant_file != -1) {
@@ -172,6 +176,7 @@ void Position::make_move(Move m) {
     }
     remove_piece(from);
     if (captured_piece != no_piece) {
+        is_reversible = false;
         halfmove_clock = 0;
         if (move_type == en_passant) {
             Square pawn_pos = to + relative_direction(us, south);
@@ -201,6 +206,7 @@ void Position::make_move(Move m) {
         zobrist ^= zobrist_castling[castle_rights];
     }
     else if (type == pawn) {
+        is_reversible = false;
         halfmove_clock = 0;
         if (std::abs(static_cast<int>(rank_of(to)) - static_cast<int>(rank_of(from))) > 1) {
             en_passant_file = file_of(to);
@@ -223,6 +229,7 @@ void Position::make_move(Move m) {
     else {
         put_piece(to, piece);
         if (move_type == castle) {
+            is_reversible = false;
             bool kingside = (relative_square(us, to) == g1);
             Square from_rook = kingside ? relative_square(us, h1) : relative_square(us, a1);
             Square to_rook = kingside ? relative_square(us, f1) : relative_square(us, d1);
@@ -232,6 +239,7 @@ void Position::make_move(Move m) {
 
     white_to_move = !white_to_move;
     zobrist ^= zobrist_black_to_move;
+    history.push(zobrist, is_reversible);
 }
 
 void Position::unmake_move(Move m) {
@@ -284,6 +292,7 @@ void Position::unmake_move(Move m) {
         Square to_rook = kingside ? relative_square(us, f1) : relative_square(us, d1);
         move_piece(to_rook, from_rook);
     }
+    history.pop();
 }
 
 void Position::move_piece(Square from, Square to) {
