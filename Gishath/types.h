@@ -98,7 +98,7 @@ enum PieceType : uint8_t {
     queen,
     king,
     all_pieces = 0, // Stores every piece
-    piece_type_num = 7
+    piece_type_num = 7 // Include no_piece_type
 };
 
 enum Piece : uint8_t {
@@ -115,6 +115,7 @@ enum Piece : uint8_t {
     black_rook,
     black_queen,
     black_king,
+    piece_num = 12
 };
 
 constexpr Piece make_piece(Color c, PieceType pt) {
@@ -131,6 +132,10 @@ constexpr Color color_of(Piece p) {
 
 constexpr PieceType piecetype_of(Piece p) {
     return PieceType(p & 7); // Look at bits associated with piece type
+}
+// Returns an index from [0, 12)
+constexpr int compact_piece_idx(Piece p) {
+    return (color_of(p) * 6) + piecetype_of(p) - white_pawn;
 }
 constexpr Bitboard relative_bb(Color us, Bitboard bb) {
     return us == white ? bb : ((bb << 56)) |

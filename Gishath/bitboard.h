@@ -1,5 +1,4 @@
 #pragma once
-#include <bit>
 #include <cassert>
 #include "types.h"
 
@@ -27,7 +26,7 @@ Square get_lsb(Bitboard bb);
 constexpr int popcount(Bitboard bb) {
     int count = 0;
     while (bb) {
-        bb &= bb - 1; // Clear the least significant bit set
+        pop_lsb(bb);
         ++count;
     }
     return count;

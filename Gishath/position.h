@@ -24,6 +24,7 @@ private:
     constexpr int unmake_index() const;
     int ply = 0;
     std::array<UnmakeInfo, max_ply> unmake_stack; // Store history, get index through side to move and fullmove clock
+    Bitboard zobrist = 0;
 
 public:
     std::array<Piece, square_num> board_mailbox;

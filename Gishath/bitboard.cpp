@@ -1,4 +1,5 @@
 #include "bitboard.h"
+#include <bit>
 
 Square pop_lsb(Bitboard& bb) {
     if (!bb) return Square(64);

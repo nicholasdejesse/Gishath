@@ -1,4 +1,5 @@
 #include "position.h"
+#include "zobrist.h"
 #include <iostream>
 #include <sstream>
 #include <cctype>
@@ -52,7 +53,9 @@ void Position::load_fen(std::string fen) {
             case 'k': piece = black_king; break;
             default: throw std::invalid_argument("Invalid FEN string");
             }
-            put_piece(Square(rank_idx * 8 + file_idx), piece);
+            Square sq = Square(rank_idx * 8 + file_idx);
+            put_piece(sq, piece);
+            zobrist ^= zobrist_pieces[compact_piece_idx(piece)][sq];
             ++file_idx;
         }
     }
@@ -63,6 +66,7 @@ void Position::load_fen(std::string fen) {
     }
     else if (side_to_move == "b") {
         white_to_move = false;
+        zobrist ^= zobrist_black_to_move;
     }
     else {
         throw std::invalid_argument("Invalid FEN string");
@@ -80,6 +84,9 @@ void Position::load_fen(std::string fen) {
         default: throw std::invalid_argument("Invalid FEN string");
         }
     }
+
+    assert(castle_rights < 16);
+    zobrist ^= zobrist_castling[castle_rights & 0xf];
     
     // 4. En passant
     en_passant_file = -1;
@@ -90,6 +97,7 @@ void Position::load_fen(std::string fen) {
             throw std::invalid_argument("Invalid FEN string");
         }
         en_passant_file = file_char - 'a';
+        zobrist ^= zobrist_en_passant_file[en_passant_file];
     }
     
     // 5. Halfmove clock
@@ -155,7 +163,10 @@ void Position::make_move(Move m) {
     ++ply;
 
     ++halfmove_clock;
-    en_passant_file = -1;
+    if (en_passant_file != -1) {
+        zobrist ^= zobrist_en_passant_file[en_passant_file];
+        en_passant_file = -1;
+    }
     if (!white_to_move) {
         ++fullmove_clock;
     }
@@ -171,22 +182,29 @@ void Position::make_move(Move m) {
             remove_piece(to);
             if (captured_type == rook) {
                 if (to == relative_square(them, h1)) {
+                    zobrist ^= zobrist_castling[castle_rights];
                     castle_rights &= ~(them == white ? WK : BK);
+                    zobrist ^= zobrist_castling[castle_rights];
                 }
                 else if (to == relative_square(them, a1)) {
+                    zobrist ^= zobrist_castling[castle_rights];
                     castle_rights &= ~(them == white ? WQ : BQ);
+                    zobrist ^= zobrist_castling[castle_rights];
                 }
             }
         }
     }
 
     if (type == king) {
+        zobrist ^= zobrist_castling[castle_rights];
         castle_rights &= ~(us == white ? (WK | WQ) : (BK | BQ));
+        zobrist ^= zobrist_castling[castle_rights];
     }
     else if (type == pawn) {
         halfmove_clock = 0;
         if (std::abs(static_cast<int>(rank_of(to)) - static_cast<int>(rank_of(from))) > 1) {
             en_passant_file = file_of(to);
+            zobrist ^= zobrist_en_passant_file[en_passant_file];
         }
     }
     else if (type == rook) {
@@ -213,6 +231,7 @@ void Position::make_move(Move m) {
     }
 
     white_to_move = !white_to_move;
+    zobrist ^= zobrist_black_to_move;
 }
 
 void Position::unmake_move(Move m) {
@@ -228,15 +247,24 @@ void Position::unmake_move(Move m) {
 
     // Need to do this first so we can get correct index
     white_to_move = !white_to_move;
+    zobrist ^= zobrist_black_to_move;
     if (!white_to_move) {
         --fullmove_clock;
     }
 
     UnmakeInfo unmake_info = unmake_stack[unmake_index()];
 
+    if (en_passant_file != -1) {
+        zobrist ^= zobrist_en_passant_file[en_passant_file];
+    }
+    zobrist ^= zobrist_castling[castle_rights];
     halfmove_clock = unmake_info.halfmove_clock;
     en_passant_file = unmake_info.en_passant_file;
     castle_rights = unmake_info.castle_rights;
+    zobrist ^= zobrist_castling[castle_rights];
+    if (en_passant_file != -1) {
+        zobrist ^= zobrist_en_passant_file[en_passant_file];
+    }
 
     remove_piece(to);
     if (unmake_info.captured_piece != no_piece) {
@@ -264,6 +292,8 @@ void Position::move_piece(Square from, Square to) {
     Color color = color_of(piece);
     Bitboard from_to = square_to_bitboard(from) | square_to_bitboard(to);
 
+    zobrist ^= zobrist_pieces[compact_piece_idx(piece)][from];
+    zobrist ^= zobrist_pieces[compact_piece_idx(piece)][to];
     type_BB[all_pieces] ^= from_to;
     type_BB[type] ^= from_to;
     color_BB[color] ^= from_to;
@@ -276,6 +306,7 @@ void Position::put_piece(Square to, Piece piece) {
     Color color = color_of(piece);
     Bitboard to_mask = square_to_bitboard(to);
 
+    zobrist ^= zobrist_pieces[compact_piece_idx(piece)][to];
     type_BB[all_pieces] ^= to_mask;
     type_BB[type] ^= to_mask;
     color_BB[color] ^= to_mask;
@@ -288,6 +319,7 @@ void Position::remove_piece(Square from) {
     Color color = color_of(piece);
     Bitboard from_mask = square_to_bitboard(from);
 
+    zobrist ^= zobrist_pieces[compact_piece_idx(piece)][from];
     type_BB[all_pieces] ^= from_mask;
     type_BB[type] ^= from_mask;
     color_BB[color] ^= from_mask;
