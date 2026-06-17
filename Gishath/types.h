@@ -11,7 +11,8 @@ constexpr int move_list_size = 256;
 
 constexpr int checkmate_score = -999;
 constexpr int draw_score = 0;
-constexpr int min_eval_score = std::numeric_limits<int>::min();
+constexpr int negative_inf = std::numeric_limits<int>::min() / 2;
+constexpr int positive_inf = std::numeric_limits<int>::max() / 2;
 
 enum Square : uint8_t {
     a1, b1, c1, d1, e1, f1, g1, h1,
