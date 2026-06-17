@@ -1,4 +1,5 @@
 #include "bitboard.h"
+#include <cassert>
 #include <bit>
 
 Square pop_lsb(Bitboard& bb) {

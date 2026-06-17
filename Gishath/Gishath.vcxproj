@@ -155,6 +155,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="attacks.h" />
+    <ClInclude Include="consts.h" />
     <ClInclude Include="eval.h" />
     <ClInclude Include="gamehistory.h" />
     <ClInclude Include="magics.h" />

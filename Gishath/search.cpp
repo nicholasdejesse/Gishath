@@ -1,7 +1,20 @@
 #include "search.h"
+#include "consts.h"
 
 int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
-    if (depth == 0) return evaluate_position(pos);
+    if (depth <= 0) return evaluate_position(pos);
+
+    Color us = pos.side_to_move();
+    // Null move pruning
+    // Don't allow when in check or side to move is only king and pawns
+    if (depth >= null_move_reduction && !pos.is_checked(us) && !(pos.color_BB[us] & ~pos.type_BB[pawn] & ~pos.type_BB[king])) {
+        pos.make_nullmove();
+        int null_score = -1 * negamax_recursive(pos, depth - null_move_reduction, -beta, -beta + 1);
+        pos.unmake_nullmove();
+        if (null_score >= beta) {
+            return null_score;
+        }
+    }
 
     MoveList ml = generate(pos);
     if (ml.count == 0) return evaluate_position(pos);
@@ -47,7 +60,7 @@ Move negamax(Position& pos, int depth) {
             continue;
         }
         found_legal = true;
-        int score = -negamax_recursive(pos, depth - 1, -beta, -alpha);
+        int score = -1 * negamax_recursive(pos, depth - 1, -beta, -alpha);
         if (score > max) {
             max = score;
             best_move = ml.moves[i];

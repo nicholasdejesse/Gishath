@@ -7,6 +7,7 @@
 #include "attacks.h"
 #include "movegen.h"
 #include "gamehistory.h"
+#include "consts.h"
 
 class Move;
 
@@ -44,8 +45,11 @@ public:
 
     void make_move(Move move);
     void unmake_move(Move move);
+    void make_nullmove();
+    void unmake_nullmove();
     bool is_attacked(Square sq, Color us);
     bool is_checked(Color us);
+    Color side_to_move();
     Bitboard dangerous(Color us);
     bool legal();
     Color to_move() const;

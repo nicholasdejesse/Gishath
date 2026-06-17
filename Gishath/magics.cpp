@@ -1,4 +1,10 @@
 #include "magics.h"
+#include <cassert>
+#include <iostream>
+#include <array>
+#include <random>
+#include "attacks.h"
+
 
 std::array<std::array<Bitboard, 512>, square_num> bishop_attacks;
 std::array<std::array<Bitboard, 4096>, square_num> rook_attacks;
@@ -48,6 +54,7 @@ std::array<Magic, square_num> find_magics() {
         Bitboard edge_mask = ((file_bb_of(file_a) | file_bb_of(file_h)) & ~file_bb_of(sq)) | ((rank_bb_of(rank_1) | rank_bb_of(rank_8)) & ~rank_bb_of(sq));
         mask &= ~edge_mask;
 
+        // Vectors are fine here since this is just at startup
         std::vector<Bitboard> blocker_subsets;
         std::vector<Bitboard> attack_masks;
 

@@ -295,6 +295,46 @@ void Position::unmake_move(Move m) {
     history.pop();
 }
 
+void Position::make_nullmove() {
+    UnmakeInfo unmake = UnmakeInfo{ no_piece, castle_rights, halfmove_clock, en_passant_file };
+    unmake_stack[unmake_index()] = unmake;
+    ++ply;
+
+    ++halfmove_clock;
+    if (en_passant_file != -1) {
+        zobrist ^= zobrist_en_passant_file[en_passant_file];
+        en_passant_file = -1;
+    }
+    if (!white_to_move) {
+        ++fullmove_clock;
+    }
+
+    white_to_move = !white_to_move;
+    zobrist ^= zobrist_black_to_move;
+}
+
+void Position::unmake_nullmove() {
+    --ply;
+
+    // Need to do this first so we can get correct index
+    white_to_move = !white_to_move;
+    zobrist ^= zobrist_black_to_move;
+    if (!white_to_move) {
+        --fullmove_clock;
+    }
+
+    UnmakeInfo unmake_info = unmake_stack[unmake_index()];
+
+    if (en_passant_file != -1) {
+        zobrist ^= zobrist_en_passant_file[en_passant_file];
+    }
+    halfmove_clock = unmake_info.halfmove_clock;
+    en_passant_file = unmake_info.en_passant_file;
+    if (en_passant_file != -1) {
+        zobrist ^= zobrist_en_passant_file[en_passant_file];
+    }
+}
+
 void Position::move_piece(Square from, Square to) {
     Piece piece = board_mailbox[from];
     PieceType type = piecetype_of(piece);
@@ -374,6 +414,9 @@ bool Position::has_legal_moves() {
 bool Position::legal() {
     Color just_moved = Color(white_to_move ? black : white);
     return !is_checked(just_moved);
+}
+Color Position::side_to_move() {
+    return white_to_move ? white : black;
 }
 // Returns the squares that enemies attacking the king reside on and rays to block them
 Bitboard Position::dangerous(Color us) {

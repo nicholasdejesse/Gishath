@@ -1,5 +1,4 @@
 #pragma once
-#include <cassert>
 #include "types.h"
 
 constexpr Bitboard shift_BB(Bitboard bb, Direction d) {

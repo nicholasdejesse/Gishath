@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include "types.h"
+#include "consts.h"
 
 // Stores history of positions as Zobrists
 class GameHistory {

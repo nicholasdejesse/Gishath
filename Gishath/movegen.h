@@ -6,6 +6,7 @@
 #include "attacks.h"
 #include <array>
 #include <cassert>
+#include "consts.h"
 
 class Position;
 

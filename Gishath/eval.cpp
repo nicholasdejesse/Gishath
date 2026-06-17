@@ -1,4 +1,5 @@
 #include "eval.h"
+#include "consts.h"
 
 int evaluate_position(Position& pos) {
     // Return draw on first repetition to avoid wasted computation
@@ -6,7 +7,7 @@ int evaluate_position(Position& pos) {
     if (pos.halfmove_clock >= 100) return draw_score;
     // This is a slow way of detecting this, should update later
     if (!pos.has_legal_moves()) {
-        if (pos.is_checked(pos.white_to_move ? white : black)) {
+        if (pos.is_checked(pos.side_to_move())) {
             return checkmate_score;
         }
         else {

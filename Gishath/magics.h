@@ -1,10 +1,5 @@
 #pragma once
-#include <array>
-#include <random>
-#include "attacks.h"
 #include "types.h"
-#include <cassert>
-#include <iostream>
 
 // Using "plain" magics, may switch to fancy magics later
 struct Magic {

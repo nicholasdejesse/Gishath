@@ -95,5 +95,8 @@
     <ClInclude Include="gamehistory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="consts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
