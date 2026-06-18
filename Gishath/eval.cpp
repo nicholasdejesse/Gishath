@@ -1,14 +1,15 @@
 #include "eval.h"
 #include "consts.h"
 
-int evaluate_position(Position& pos) {
+int evaluate_position(Position& pos, int depth) {
     // Return draw on first repetition to avoid wasted computation
     if (pos.history.repeated(pos.zobrist)) return draw_score;
     if (pos.halfmove_clock >= 100) return draw_score;
     // This is a slow way of detecting this, should update later
     if (!pos.has_legal_moves()) {
         if (pos.is_checked(pos.side_to_move())) {
-            return checkmate_score;
+            // Prefer faster checkmates, so if depth is still high (early in search) the score is worse
+            return -(checkmate_score + depth);
         }
         else {
             return draw_score;

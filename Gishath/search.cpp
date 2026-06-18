@@ -28,7 +28,7 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
     if (out_of_time) {
         return draw_score;
     }
-    if (depth <= 0) return evaluate_position(pos);
+    if (depth <= 0) return evaluate_position(pos, depth);
 
     Color us = pos.side_to_move();
     // Null move pruning
@@ -44,7 +44,7 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
 
     MoveList ml = generate(pos);
     MoveOrder order = MoveOrder(ml, pos);
-    if (ml.count == 0) return evaluate_position(pos);
+    if (ml.count == 0) return evaluate_position(pos, depth);
 
     bool found_legal = false;
     int max = negative_inf;
@@ -68,7 +68,7 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
             return max;
         }
     }
-    if (!found_legal) return evaluate_position(pos);
+    if (!found_legal) return evaluate_position(pos, depth);
     return max;
 }
 

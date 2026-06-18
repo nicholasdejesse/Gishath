@@ -6,8 +6,8 @@
 // Stores history of positions as Zobrists
 class GameHistory {
 private:
-    std::array<Bitboard, max_ply> hashes{};
-    std::array<int, max_ply> hash_len_history{};
+    std::array<Bitboard, history_length> hashes{};
+    std::array<int, history_length> hash_len_history{};
     int hash_history_idx = 0;
     int hash_len = 0;
 
