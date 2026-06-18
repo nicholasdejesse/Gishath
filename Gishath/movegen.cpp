@@ -118,10 +118,10 @@ void generate_king_moves(Position& pos, MoveList& ml, Color us) {
 void generate(Position& pos, MoveList& ml) {
     //Bitboard check_mask = pos
     Color us = pos.to_move();
-    generate_pawn_moves(pos, ml, us);
-    for (PieceType pt : {knight, bishop, rook, queen}) {
+    for (PieceType pt : {queen, rook, bishop, knight}) {
         generate_moves(pos, ml, us, pt);
     }
+    generate_pawn_moves(pos, ml, us);
     generate_king_moves(pos, ml, us);
 }
 MoveList generate(Position& pos) {

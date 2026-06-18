@@ -49,11 +49,13 @@ void UCIEngine::loop() {
             }
         }
         else if (input[0] == "go") {
-            Move best_move = find_best_move(pos);
-            std::cout << "bestmove " << best_move.to_string() << std::endl;
             if (input_size > 1 && input[1] == "perft") {
                 int depth = std::stoi(input[2]);
                 run_perft(pos, depth);
+            }
+            else {
+                Move best_move = find_best_move(pos, 3000);
+                std::cout << "bestmove " << best_move.to_string() << std::endl;
             }
         }
     }

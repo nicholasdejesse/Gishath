@@ -1,7 +1,28 @@
+#include <chrono>
 #include "search.h"
 #include "consts.h"
 
+int nodes_visited = 0;
+bool out_of_time = false;
+std::chrono::time_point<std::chrono::steady_clock> end_time;
+
+void check_out_of_time() {
+    auto time_now = std::chrono::steady_clock::now();
+    if (time_now >= end_time) {
+        out_of_time = true;
+    }
+}
+
 int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
+    ++nodes_visited;
+
+    // Call every so often since it is expensive
+    if (nodes_visited % out_of_time_check_freq == 0) {
+        check_out_of_time();
+    }
+    if (out_of_time) {
+        return draw_score;
+    }
     if (depth <= 0) return evaluate_position(pos);
 
     Color us = pos.side_to_move();
@@ -74,6 +95,19 @@ Move negamax(Position& pos, int depth) {
     return best_move;
 }
 
-Move find_best_move(Position& pos) {
-    return negamax(pos, 5);
+Move find_best_move(Position& pos, int ms_to_search) {
+    nodes_visited = 0;
+    out_of_time = false;
+    end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms_to_search);
+
+    int depth = 1;
+    Move best_move;
+    while (!out_of_time) {
+        Move curr = negamax(pos, depth);
+        ++depth;
+        if (!out_of_time) {
+            best_move = curr;
+        }
+    }
+    return best_move;
 }
