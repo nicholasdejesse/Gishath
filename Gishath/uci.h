@@ -17,5 +17,6 @@ private:
 
 public:
     void loop();
+    void write_search_info(int depth, int score, int nodes_visited);
 };
 

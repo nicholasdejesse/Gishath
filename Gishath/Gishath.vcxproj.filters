@@ -54,6 +54,9 @@
     <ClCompile Include="gamehistory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="moveorder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="position.h">
@@ -96,6 +99,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="consts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="moveorder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -147,6 +147,7 @@
     <ClCompile Include="magics.cpp" />
     <ClCompile Include="move.cpp" />
     <ClCompile Include="movegen.cpp" />
+    <ClCompile Include="moveorder.cpp" />
     <ClCompile Include="perft.cpp" />
     <ClCompile Include="position.cpp" />
     <ClCompile Include="search.cpp" />
@@ -161,6 +162,7 @@
     <ClInclude Include="magics.h" />
     <ClInclude Include="move.h" />
     <ClInclude Include="movegen.h" />
+    <ClInclude Include="moveorder.h" />
     <ClInclude Include="perft.h" />
     <ClInclude Include="position.h" />
     <ClInclude Include="search.h" />

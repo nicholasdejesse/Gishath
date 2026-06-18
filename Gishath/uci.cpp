@@ -54,9 +54,12 @@ void UCIEngine::loop() {
                 run_perft(pos, depth);
             }
             else {
-                Move best_move = find_best_move(pos, 3000);
+                Move best_move = find_best_move(pos, 3000, *this);
                 std::cout << "bestmove " << best_move.to_string() << std::endl;
             }
+        }
+        else if (input[0] == "quit") {
+            break;
         }
     }
 }
@@ -67,4 +70,8 @@ void UCIEngine::new_game() {
 // Called when "position ..." is passed in, does not reset anything related to current game (i.e. transposition tables)
 void UCIEngine::reset_position() {
     pos = Position();
+}
+
+void UCIEngine::write_search_info(int depth, int score, int nodes_visited) {
+    std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes_visited << std::endl;
 }

@@ -1,6 +1,11 @@
 #include <chrono>
+#include <utility>
 #include "search.h"
 #include "consts.h"
+#include "uci.h"
+#include "movegen.h"
+#include "eval.h"
+#include "moveorder.h"
 
 int nodes_visited = 0;
 bool out_of_time = false;
@@ -38,14 +43,16 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
     }
 
     MoveList ml = generate(pos);
+    MoveOrder order = MoveOrder(ml, pos);
     if (ml.count == 0) return evaluate_position(pos);
 
     bool found_legal = false;
     int max = negative_inf;
     for (int i = 0; i < ml.count; ++i) {
-        pos.make_move(ml.moves[i]);
+        Move m = order.get_next_move();
+        pos.make_move(m);
         if (!pos.legal()) {
-            pos.unmake_move(ml.moves[i]);
+            pos.unmake_move(m);
             continue;
         }
         found_legal = true;
@@ -56,7 +63,7 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
                 alpha = score;
             }
         }
-        pos.unmake_move(ml.moves[i]);
+        pos.unmake_move(m);
         if (score >= beta) {
             return max;
         }
@@ -65,13 +72,12 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
     return max;
 }
 
-Move negamax(Position& pos, int depth) {
+std::pair<Move, int> negamax(Position& pos, int depth) {
     MoveList ml = generate(pos);
-    if (ml.count == 0) return evaluate_position(pos);
+    assert(ml.count > 0);
 
     int alpha = negative_inf;
     int beta = positive_inf;
-    bool found_legal = false;
     int max = negative_inf;
     Move best_move;
     for (int i = 0; i < ml.count; ++i) {
@@ -80,7 +86,6 @@ Move negamax(Position& pos, int depth) {
             pos.unmake_move(ml.moves[i]);
             continue;
         }
-        found_legal = true;
         int score = -1 * negamax_recursive(pos, depth - 1, -beta, -alpha);
         if (score > max) {
             max = score;
@@ -91,23 +96,26 @@ Move negamax(Position& pos, int depth) {
         }
         pos.unmake_move(ml.moves[i]);
     }
-    if (!found_legal) return evaluate_position(pos);
-    return best_move;
+    return std::make_pair(best_move, max);
 }
 
-Move find_best_move(Position& pos, int ms_to_search) {
+Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci) {
     nodes_visited = 0;
     out_of_time = false;
     end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms_to_search);
 
     int depth = 1;
     Move best_move;
+    int best_score = negative_inf;
     while (!out_of_time) {
-        Move curr = negamax(pos, depth);
-        ++depth;
+        std::pair<Move, int> curr = negamax(pos, depth);
         if (!out_of_time) {
-            best_move = curr;
+            best_move = curr.first;
+            best_score = curr.second;
         }
+        uci.write_search_info(depth, best_score, nodes_visited);
+        ++depth;
     }
+    
     return best_move;
 }
