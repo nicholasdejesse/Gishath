@@ -12,10 +12,14 @@ void GameHistory::pop() {
 }
 
 bool GameHistory::repeated(Bitboard zobrist) {
-    for (int i = hash_len - 1; i > 0; i -= 2) {
+    for (int i = hash_len - 3; i >= 0; i -= 2) {
         if (hashes[i] == zobrist) {
+            std::cout << "Found threefold" << std::endl;
             return true;
         }
     }
     return false;
+}
+void GameHistory::clear() {
+    hash_len = 0;
 }

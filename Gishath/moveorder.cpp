@@ -26,6 +26,7 @@ MoveOrder::MoveOrder(MoveList& ml, Position& pos) : ml(ml), pos(pos), idx_sorted
 // Performs selection sort to move next best move to front, then returns it
 Move MoveOrder::get_next_move() {
     assert(ml.count > 0);
+    assert(idx_sorted < ml.count);
     int max_idx = -1;
     int max_found_score = negative_inf;
     for (int i = idx_sorted; i < ml.count; ++i) {

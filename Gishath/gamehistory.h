@@ -13,4 +13,5 @@ public:
     void push(Bitboard zobrist, bool reversible);
     void pop();
     bool repeated(Bitboard zobrist);
+    void clear();
 };

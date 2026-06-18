@@ -107,6 +107,7 @@ void Position::load_fen(std::string fen) {
     fullmove_clock = fullmoves;
 
     // Load to game history
+    history.clear();
     history.push(zobrist, false);
 }
 

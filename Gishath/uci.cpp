@@ -54,7 +54,15 @@ void UCIEngine::loop() {
                 run_perft(pos, depth);
             }
             else {
-                Move best_move = find_best_move(pos, 3000, *this);
+                int wtime = 3000 * 20;
+                int btime = 3000 * 20;
+                // This logic is a bit frail, should switch later
+                if (input_size > 5 && input[1] == "wtime" && input[3] == "btime") {
+                    wtime = std::stoi(input[2]);
+                    btime = std::stoi(input[4]);
+                }
+                int ms_to_search = get_time_for_move(wtime, btime);
+                Move best_move = find_best_move(pos, ms_to_search, *this);
                 std::cout << "bestmove " << best_move.to_string() << std::endl;
             }
         }
@@ -67,11 +75,21 @@ void UCIEngine::loop() {
 void UCIEngine::new_game() {
     // Need to implement this
 }
-// Called when "position ..." is passed in, does not reset anything related to current game (i.e. transposition tables)
+// Called when "position ..." is passed in, does not reset anything related to current game (i.e. transposition table)
 void UCIEngine::reset_position() {
     pos = Position();
 }
 
 void UCIEngine::write_search_info(int depth, int score, int nodes_visited) {
     std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes_visited << std::endl;
+}
+
+int UCIEngine::get_time_for_move(int wtime, int btime) {
+    // Just divide remaining time by 20
+    int our_time = pos.side_to_move() == white ? wtime : btime;
+    int time_allotted = our_time / 20;
+    if (time_allotted > 0) {
+        return time_allotted;
+    }
+    return our_time;
 }

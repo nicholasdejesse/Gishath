@@ -14,6 +14,7 @@ private:
 
     void new_game();
     void reset_position();
+    int get_time_for_move(int wtime, int btime);
 
 public:
     void loop();
