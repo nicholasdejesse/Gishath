@@ -2,22 +2,17 @@
 #include <iostream>
 
 void GameHistory::push(Bitboard zobrist, bool reversible) {
-    hash_len_history[hash_len] = hash_len;
-    if (!reversible) hash_len = 0;
-    hashes[hash_len] = zobrist;
-    ++hash_len;
-    ++hash_history_idx;
+    if (!reversible) last_reversible = idx;
+    hashes[idx] = zobrist;
+    ++idx;
 }
 
 void GameHistory::pop() {
-    if (hash_history_idx > 0) {
-        --hash_history_idx;
-        hash_len = hash_len_history[hash_history_idx];
-    }
+    --idx;
 }
 
 bool GameHistory::repeated(Bitboard zobrist) {
-    for (int i = hash_len - 3; i >= 0; i -= 2) {
+    for (int i = idx - 3; i >= last_reversible; i -= 2) {
         if (hashes[i] == zobrist) {
             return true;
         }
@@ -25,6 +20,6 @@ bool GameHistory::repeated(Bitboard zobrist) {
     return false;
 }
 void GameHistory::clear() {
-    hash_len = 0;
-    hash_history_idx = 0;
+    last_reversible = 0;
+    idx = 0;
 }

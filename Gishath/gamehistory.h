@@ -7,9 +7,8 @@
 class GameHistory {
 private:
     std::array<Bitboard, history_length> hashes{};
-    std::array<int, history_length> hash_len_history{};
-    int hash_history_idx = 0;
-    int hash_len = 0;
+    int last_reversible = 0;
+    int idx = 0;
 
 public:
     void push(Bitboard zobrist, bool reversible);
