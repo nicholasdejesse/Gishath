@@ -10,6 +10,13 @@
 
 class Position;
 
+// Types of moves to generate
+enum class GenType {
+    captures,
+    quiet,
+    all
+};
+
 struct MoveList {
     std::array<Move, move_list_size> moves;
     int count = 0;
@@ -19,5 +26,7 @@ struct MoveList {
     MoveList();
 };
 
-void generate(Position& pos, MoveList& ml);
+template <GenType type>
+MoveList generate_by_type(Position& pos);
+
 MoveList generate(Position& pos);

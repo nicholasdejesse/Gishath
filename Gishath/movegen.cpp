@@ -32,7 +32,7 @@ void put_moves(MoveList& ml, Square from, Bitboard to) {
     }
 }
 
-void generate_pawn_moves(Position& pos, MoveList& ml, Color us) {
+void generate_pawn_moves(Position& pos, MoveList& ml, Color us, Bitboard mask) {
     Color them = Color(1 - us);
     Bitboard pawns = pos.type_BB[pawn] & pos.color_BB[us];
     Bitboard empty_squares = ~pos.pieces();
@@ -45,10 +45,10 @@ void generate_pawn_moves(Position& pos, MoveList& ml, Color us) {
     Direction up_right = relative_direction(us, north_east);
     Direction up_left = relative_direction(us, north_west);
 
-    Bitboard push_1 = shift_BB(non_promo_pawns, up) & empty_squares;
-    Bitboard push_2 = shift_BB(push_1 & second_push_rank, up) & empty_squares;
-    Bitboard non_promo_captures_left = shift_BB(non_promo_pawns, up_left) & enemies;
-    Bitboard non_promo_captures_right = shift_BB(non_promo_pawns, up_right) & enemies;
+    Bitboard push_1 = shift_BB(non_promo_pawns, up) & empty_squares & mask;
+    Bitboard push_2 = shift_BB(push_1 & second_push_rank, up) & empty_squares & mask;
+    Bitboard non_promo_captures_left = shift_BB(non_promo_pawns, up_left) & enemies & mask;
+    Bitboard non_promo_captures_right = shift_BB(non_promo_pawns, up_right) & enemies & mask;
 
     put_pawn_moves(ml, push_1, up);
     put_pawn_moves(ml, push_2, up + up);
@@ -56,9 +56,9 @@ void generate_pawn_moves(Position& pos, MoveList& ml, Color us) {
     put_pawn_moves(ml, non_promo_captures_right, up_right);
 
     if (promo_pawns) {
-        Bitboard promo_push = shift_BB(promo_pawns, up) & empty_squares;
-        Bitboard promo_capture_left = shift_BB(promo_pawns, up_left) & enemies;
-        Bitboard promo_capture_right = shift_BB(promo_pawns, up_right) & enemies;
+        Bitboard promo_push = shift_BB(promo_pawns, up) & empty_squares & mask;
+        Bitboard promo_capture_left = shift_BB(promo_pawns, up_left) & enemies & mask;
+        Bitboard promo_capture_right = shift_BB(promo_pawns, up_right) & enemies & mask;
 
         put_promotion(ml, promo_push, up);
         put_promotion(ml, promo_capture_left, up_left);
@@ -67,33 +67,38 @@ void generate_pawn_moves(Position& pos, MoveList& ml, Color us) {
 
     if (pos.en_passant_file != -1) {
         Square target = relative_square(us, make_square(rank_6, pos.en_passant_file)); // Square we want to capture
-        Bitboard can_capture = pawn_attacks(them, square_to_bitboard(target)) & pawns;
+        Bitboard can_capture = pawn_attacks(them, square_to_bitboard(target)) & pawns & mask;
         while (can_capture) {
             ml.push(Move(pop_lsb(can_capture), target, en_passant));
         }
     }
 }
 
-void generate_moves(Position& pos, MoveList& ml, Color us, PieceType pt) {
+template <GenType type>
+void generate_moves(Position& pos, MoveList& ml, Color us, PieceType pt, Bitboard mask) {
     Bitboard pt_pieces = pos.type_BB[pt] & pos.color_BB[us];
     Bitboard occ = pos.pieces();
-    Bitboard friendly = pos.color_BB[us];
+    Bitboard allowed = ~pos.color_BB[us] & mask;
     
     while (pt_pieces) {
         Square from = pop_lsb(pt_pieces);
-        Bitboard to = get_attacks(us, pt, from, occ) & ~friendly;
+        Bitboard to = get_attacks(us, pt, from, occ) & allowed;
         put_moves(ml, from, to);
     }
 }
 
-void generate_king_moves(Position& pos, MoveList& ml, Color us) {
+template <GenType type>
+void generate_king_moves(Position& pos, MoveList& ml, Color us, Bitboard mask) {
     Bitboard dangerous = pos.dangerous(us);
     Bitboard friendly_king = pos.type_BB[king] & pos.color_BB[us];
-    Bitboard friendly = pos.color_BB[us];
+    Bitboard allowed = ~pos.color_BB[us] & mask & ~dangerous;
 
     Square from = get_lsb(friendly_king);
-    put_moves(ml, from, get_attacks(us, king, from, pos.pieces()) & ~friendly & ~dangerous);
+    put_moves(ml, from, get_attacks(us, king, from, pos.pieces()) & allowed);
 
+    if (type == GenType::captures) return;
+
+    // Castling
     Bitboard pieces = pos.pieces();
     bool can_castle = (dangerous & friendly_king) == 0;
     bool can_kingside = us == white ? pos.castle_rights & WK : pos.castle_rights & BK;
@@ -115,17 +120,35 @@ void generate_king_moves(Position& pos, MoveList& ml, Color us) {
 
 
 // Generates all pseudo-legal moves in a position
-void generate(Position& pos, MoveList& ml) {
+MoveList generate(Position& pos) {
+    MoveList ml;
     //Bitboard check_mask = pos
     Color us = pos.to_move();
     for (PieceType pt : {queen, rook, bishop, knight}) {
-        generate_moves(pos, ml, us, pt);
+        generate_moves<GenType::all>(pos, ml, us, pt, full_bb);
     }
-    generate_pawn_moves(pos, ml, us);
-    generate_king_moves(pos, ml, us);
-}
-MoveList generate(Position& pos) {
-    MoveList ml;
-    generate(pos, ml);
+    generate_pawn_moves(pos, ml, us, full_bb);
+    generate_king_moves<GenType::all>(pos, ml, us, full_bb);
     return ml;
 }
+
+template <GenType type>
+MoveList generate_by_type(Position& pos) {
+    Color us = pos.to_move();
+    Bitboard mask = type == GenType::captures ? pos.color_BB[Color(1 - us)]
+        : type == GenType::quiet ? ~pos.color_BB[Color(1 - us)]
+        : full_bb;
+
+    MoveList ml;
+    //Bitboard check_mask = pos
+    for (PieceType pt : {queen, rook, bishop, knight}) {
+        generate_moves<type>(pos, ml, us, pt, mask);
+    }
+    generate_pawn_moves(pos, ml, us, mask);
+    generate_king_moves<type>(pos, ml, us, mask);
+    return ml;
+}
+
+template MoveList generate_by_type<GenType::captures>(Position&);
+template MoveList generate_by_type<GenType::quiet>(Position&);
+template MoveList generate_by_type<GenType::all>(Position&);

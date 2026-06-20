@@ -1,10 +1,11 @@
 #include "gamehistory.h"
-#include <iostream>
 
 void GameHistory::push(Bitboard zobrist, bool reversible) {
-    if (!reversible) last_reversible = idx;
-    hashes[idx] = zobrist;
-    ++idx;
+    if (idx < history_length) {
+        if (!reversible) last_reversible = idx;
+        hashes[idx] = zobrist;
+        ++idx;
+    }
 }
 
 void GameHistory::pop() {

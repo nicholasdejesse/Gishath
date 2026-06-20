@@ -55,6 +55,7 @@ public:
     Color to_move() const;
     void load_fen(std::string fen);
     bool has_legal_moves();
+    bool threefold_or_50_move();
 
     Position();
 };

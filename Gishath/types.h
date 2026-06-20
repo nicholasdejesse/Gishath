@@ -5,6 +5,7 @@
 // Helpful enums/functions for the enums
 
 typedef unsigned long long Bitboard;
+constexpr Bitboard full_bb = Bitboard(0xFFFFFFFFFFFFFFFF);
 
 enum Square : uint8_t {
     a1, b1, c1, d1, e1, f1, g1, h1,

@@ -436,3 +436,6 @@ Bitboard Position::dangerous(Color us) {
 Bitboard Position::pieces() {
     return type_BB[all_pieces];
 }
+bool Position::threefold_or_50_move() {
+    return history.repeated(zobrist) || halfmove_clock >= 100;
+}

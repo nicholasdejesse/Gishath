@@ -18,6 +18,52 @@ void check_out_of_time() {
     }
 }
 
+int quiescence(Position& pos, int depth, int alpha, int beta) {
+    ++nodes_visited;
+    if (nodes_visited % out_of_time_check_freq == 0) {
+        check_out_of_time();
+    }
+    if (pos.threefold_or_50_move())
+        return draw_score;
+    if (out_of_time)
+        return draw_score; // Doesn't matter what we return here
+
+    int max = evaluate_position(pos, depth);
+    if (max >= beta)
+        return max;
+    if (max > alpha)
+        alpha = max;
+
+    MoveList ml = generate_by_type<GenType::captures>(pos);
+    MoveOrder order = MoveOrder(ml, pos);
+    if (ml.count == 0) return max;
+
+    bool found_legal = false;
+    for (int i = 0; i < ml.count; ++i) {
+        Move m = order.get_next_move();
+        pos.make_move(m);
+        if (!pos.legal()) {
+            pos.unmake_move(m);
+            continue;
+        }
+        found_legal = true;
+        int score = -1 * quiescence(pos, depth - 1, -beta, -alpha);
+        if (score > max) {
+            max = score;
+            if (score > alpha) {
+                alpha = score;
+            }
+        }
+        pos.unmake_move(m);
+        if (score >= beta) {
+            return max;
+        }
+    }
+    if (!found_legal) return evaluate_position(pos, depth);
+    return max;
+
+}
+
 int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
     ++nodes_visited;
 
@@ -25,10 +71,12 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
     if (nodes_visited % out_of_time_check_freq == 0) {
         check_out_of_time();
     }
-    if (out_of_time) {
+    if (pos.threefold_or_50_move())
         return draw_score;
-    }
-    if (depth <= 0) return evaluate_position(pos, depth);
+    if (out_of_time)
+        return draw_score; // Doesn't matter what we return here
+
+    if (depth <= 0) return quiescence(pos, depth, alpha, beta);
 
     Color us = pos.side_to_move();
     // Null move pruning
@@ -74,32 +122,37 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
 
 std::pair<Move, int> negamax(Position& pos, int depth) {
     MoveList ml = generate(pos);
+    MoveOrder order = MoveOrder(ml, pos);
+
     assert(ml.count > 0);
 
     int alpha = negative_inf;
     int beta = positive_inf;
     int max = negative_inf;
     Move best_move;
+    
     for (int i = 0; i < ml.count; ++i) {
-        pos.make_move(ml.moves[i]);
+        Move m = order.get_next_move();
+        //Move m = ml.moves[i];
+        pos.make_move(m);
         if (!pos.legal()) {
-            pos.unmake_move(ml.moves[i]);
+            pos.unmake_move(m);
             continue;
         }
         int score = -1 * negamax_recursive(pos, depth - 1, -beta, -alpha);
         if (score > max) {
             max = score;
-            best_move = ml.moves[i];
+            best_move = m;
             if (score > alpha) {
                 alpha = score;
             }
         }
-        pos.unmake_move(ml.moves[i]);
+        pos.unmake_move(m);
     }
     return std::make_pair(best_move, max);
 }
 
-Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci) {
+Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci, int max_depth = 9999) {
     nodes_visited = 0;
     out_of_time = false;
     end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms_to_search);
@@ -107,7 +160,7 @@ Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci) {
     int depth = 1;
     Move best_move;
     int best_score = negative_inf;
-    while (!out_of_time) {
+    while (!out_of_time && depth <= max_depth) {
         std::pair<Move, int> curr = negamax(pos, depth);
         if (!out_of_time) {
             best_move = curr.first;
