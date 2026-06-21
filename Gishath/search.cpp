@@ -76,7 +76,7 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
 
-    if (depth <= 0) return quiescence(pos, depth, alpha, beta);
+    if (depth <= 0) return quiescence(pos, depth, alpha, beta); // Don't flip alpha and beta because we aren't going down search tree this call
 
     Color us = pos.side_to_move();
     // Null move pruning

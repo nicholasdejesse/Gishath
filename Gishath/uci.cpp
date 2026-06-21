@@ -43,7 +43,7 @@ void UCIEngine::loop() {
                 // Load moves
                 ++i;
                 while (i < input_size) {
-                    pos.make_move(Move(input[i], pos));
+                    pos.make_move(Move(input[i], pos), true);
                     ++i;
                 }
             }

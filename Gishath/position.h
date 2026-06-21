@@ -25,7 +25,7 @@ private:
     void remove_piece(Square from);
     constexpr int unmake_index() const;
     int ply = 0;
-    std::array<UnmakeInfo, max_ply> unmake_stack; // Store history, get index through side to move and fullmove clock
+    std::array<UnmakeInfo, max_ply> unmake_stack;
 
 public:
     std::array<Piece, square_num> board_mailbox;
@@ -43,7 +43,7 @@ public:
 
     std::string to_string();
 
-    void make_move(Move move);
+    void make_move(Move move, bool fen_setup = false);
     void unmake_move(Move move);
     void make_nullmove();
     void unmake_nullmove();

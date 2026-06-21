@@ -107,7 +107,7 @@ void Position::load_fen(std::string fen) {
     fullmove_clock = fullmoves;
 
     // Load to game history
-    history.clear();
+    history = GameHistory();
     history.push(zobrist, false);
 }
 
@@ -152,7 +152,7 @@ constexpr int Position::unmake_index() const {
     return ply;
 }
 
-void Position::make_move(Move m) {
+void Position::make_move(Move m, bool fen_setup) {
     Square from = m.get_from();
     Square to = m.get_to();
     Piece piece = board_mailbox[from];
@@ -162,9 +162,11 @@ void Position::make_move(Move m) {
     MoveType move_type = m.type_of();
     Piece captured_piece = move_type == en_passant ? make_piece(them, pawn) : board_mailbox[to];
 
-    UnmakeInfo unmake = UnmakeInfo{ captured_piece, castle_rights, halfmove_clock, en_passant_file };
-    unmake_stack[unmake_index()] = unmake;
-    ++ply;
+    if (!fen_setup) {
+        UnmakeInfo unmake = UnmakeInfo{ captured_piece, castle_rights, halfmove_clock, en_passant_file };
+        unmake_stack[unmake_index()] = unmake;
+        ++ply;
+    }
     bool is_reversible = true;
 
     ++halfmove_clock;

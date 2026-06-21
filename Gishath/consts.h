@@ -5,7 +5,7 @@
 
 constexpr int max_ply = 256; // Max ply for search
 constexpr int move_list_size = 256;
-constexpr int history_length = 2048;
+constexpr int initial_history_length = 512;
 
 constexpr int checkmate_score = 100000;
 constexpr int draw_score = 0;
