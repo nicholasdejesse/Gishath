@@ -1,6 +1,7 @@
 #include "move_order.h"
 #include "types.h"
 #include <cassert>
+#include <iostream>
 
 constexpr int hash_score = 9000;
 constexpr int captures_base_score = 5000;
@@ -17,9 +18,9 @@ constexpr std::array<std::array<int, piece_type_num>, piece_type_num> mvv_lva_ta
     {0, 0, 0, 0, 0, 0, 0}, // king victim
 }};
 
-MoveOrder::MoveOrder(MoveList& ml, Position& pos) : ml(ml), pos(pos), idx_sorted(0), scores{} {
+MoveOrder::MoveOrder(MoveList& ml, Position& pos, TranspositionTable& transposition_table) : ml(ml), pos(pos), idx_sorted(0), scores{} {
     for (int i = 0; i < ml.count; ++i) {
-        scores[i] = score_move(ml.moves[i]);
+        scores[i] = score_move(ml.moves[i], pos, transposition_table);
     }
 }
 
@@ -47,12 +48,19 @@ Move MoveOrder::get_next_move() {
     return ml.moves[idx_sorted - 1];
 }
 
-int MoveOrder::score_move(Move m) {
+int MoveOrder::score_move(Move m, Position& pos, TranspositionTable& transposition_table) {
     // TODO: score hash
     Square from = m.get_from();
     Square to = m.get_to();
     PieceType pt = piecetype_of(pos.board_mailbox[from]);
     PieceType capturing = piecetype_of(pos.board_mailbox[to]);
+
+    if (transposition_table.contains(pos.zobrist)) {
+        TranspositionEntry entry = transposition_table.get(pos.zobrist);
+        if (m == entry.best_move && pos.pseudo_legal(entry.best_move)) {
+            return hash_score;
+        }
+    }
 
     if (capturing != no_piece_type) {
         return captures_base_score + mvv_lva_table[capturing][pt];

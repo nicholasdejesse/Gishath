@@ -28,6 +28,23 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
 
+    if (transposition_table.contains(pos.zobrist)) {
+        TranspositionEntry tt_entry = transposition_table.get(pos.zobrist);
+        if (tt_entry.depth >= depth && pos.pseudo_legal(tt_entry.best_move)) {
+            switch (tt_entry.flag) {
+            case TranspositionFlag::exact:
+                return tt_entry.score;
+            case TranspositionFlag::upper_bound:
+                beta = std::min(beta, tt_entry.score);
+                break;
+            case TranspositionFlag::lower_bound:
+                alpha = std::max(alpha, tt_entry.score);
+                break;
+            }
+            if (alpha >= beta) return tt_entry.score;
+        }
+    }
+
     int max = evaluate_position(pos, depth);
     if (max >= beta)
         return max;
@@ -35,10 +52,12 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
         alpha = max;
 
     MoveList ml = generate_by_type<GenType::captures>(pos);
-    MoveOrder order = MoveOrder(ml, pos);
+    MoveOrder order = MoveOrder(ml, pos, transposition_table);
     if (ml.count == 0) return max;
 
     bool found_legal = false;
+    Move best_move = Move();
+    TranspositionFlag flag = TranspositionFlag::upper_bound;
     for (int i = 0; i < ml.count; ++i) {
         Move m = order.get_next_move();
         pos.make_move(m);
@@ -50,16 +69,21 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
         int score = -1 * quiescence(pos, depth - 1, -beta, -alpha, transposition_table);
         if (score > max) {
             max = score;
+            best_move = m;
             if (score > alpha) {
                 alpha = score;
             }
         }
         pos.unmake_move(m);
         if (score >= beta) {
+            transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, max, depth, TranspositionFlag::lower_bound));
             return max;
         }
     }
     if (!found_legal) return evaluate_position(pos, depth);
+
+    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, max, depth, flag));
+
     return max;
 
 }
@@ -71,10 +95,28 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
     if (nodes_visited % out_of_time_check_freq == 0) {
         check_out_of_time();
     }
-    if (pos.threefold_or_50_move())
-        return draw_score;
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
+
+    if (pos.threefold_or_50_move())
+        return draw_score;
+
+    if (transposition_table.contains(pos.zobrist)) {
+        TranspositionEntry tt_entry = transposition_table.get(pos.zobrist);
+        if (tt_entry.depth >= depth && pos.pseudo_legal(tt_entry.best_move)) {
+            switch (tt_entry.flag) {
+            case TranspositionFlag::exact:
+                return tt_entry.score;
+            case TranspositionFlag::upper_bound:
+                beta = std::min(beta, tt_entry.score);
+                break;
+            case TranspositionFlag::lower_bound:
+                alpha = std::max(alpha, tt_entry.score);
+                break;
+            }
+            if (alpha >= beta) return tt_entry.score;
+        }
+    }
 
     if (depth <= 0) return quiescence(pos, depth, alpha, beta, transposition_table); // Don't flip alpha and beta because we aren't going down search tree this call
 
@@ -91,11 +133,13 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
     }
 
     MoveList ml = generate(pos);
-    MoveOrder order = MoveOrder(ml, pos);
+    MoveOrder order = MoveOrder(ml, pos, transposition_table);
     if (ml.count == 0) return evaluate_position(pos, depth);
 
     bool found_legal = false;
     int max = negative_inf;
+    Move best_move = Move();
+    TranspositionFlag flag = TranspositionFlag::upper_bound;
     for (int i = 0; i < ml.count; ++i) {
         Move m = order.get_next_move();
         pos.make_move(m);
@@ -107,29 +151,56 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
         int score = -1 * negamax_recursive(pos, depth - 1, -beta, -alpha, transposition_table);
         if (score > max) {
             max = score;
+            best_move = m;
             if (score > alpha) {
+                flag = TranspositionFlag::exact;
                 alpha = score;
             }
         }
         pos.unmake_move(m);
         if (score >= beta) {
+            transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, max, depth, TranspositionFlag::lower_bound));
             return max;
         }
     }
     if (!found_legal) return evaluate_position(pos, depth);
+
+    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, max, depth, flag));
+
     return max;
 }
 
 std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& transposition_table) {
     MoveList ml = generate(pos);
-    MoveOrder order = MoveOrder(ml, pos);
+    MoveOrder order = MoveOrder(ml, pos, transposition_table);
 
     assert(ml.count > 0);
 
+
     int alpha = negative_inf;
     int beta = positive_inf;
+
+    if (transposition_table.contains(pos.zobrist)) {
+        TranspositionEntry tt_entry = transposition_table.get(pos.zobrist);
+        if (tt_entry.depth >= depth && pos.pseudo_legal(tt_entry.best_move)) {
+            switch (tt_entry.flag) {
+            case TranspositionFlag::exact:
+                return std::make_pair(tt_entry.best_move, tt_entry.score);
+            case TranspositionFlag::upper_bound:
+                beta = std::min(beta, tt_entry.score);
+                break;
+            case TranspositionFlag::lower_bound:
+                alpha = std::max(alpha, tt_entry.score);
+                break;
+            }
+            if (alpha >= beta) return std::make_pair(tt_entry.best_move, tt_entry.score);
+        }
+    }
+
+
     int max = negative_inf;
     Move best_move;
+    TranspositionFlag flag = TranspositionFlag::upper_bound;
     
     for (int i = 0; i < ml.count; ++i) {
         Move m = order.get_next_move();
@@ -144,11 +215,15 @@ std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& trans
             max = score;
             best_move = m;
             if (score > alpha) {
+                flag = TranspositionFlag::exact;
                 alpha = score;
             }
         }
         pos.unmake_move(m);
     }
+
+    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, max, depth, flag));
+
     return std::make_pair(best_move, max);
 }
 

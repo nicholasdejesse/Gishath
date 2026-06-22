@@ -58,8 +58,8 @@ void UCIEngine::loop() {
                 if (input_size >= 3 && input[1] == "depth") {
                     max_depth = std::stoi(input[2]);
                 }
-                int wtime = 10000 * 20;
-                int btime = 10000 * 20;
+                int wtime = 5000 * 20;
+                int btime = 5000 * 20;
                 // This logic is a bit frail, should switch later
                 if (input_size > 5 && input[1] == "wtime" && input[3] == "btime") {
                     wtime = std::stoi(input[2]);

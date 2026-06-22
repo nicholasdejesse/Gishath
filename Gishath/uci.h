@@ -8,7 +8,7 @@
 #include "transposition_table.h"
 
 const std::string start_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-constexpr int transposition_table_size = 16777216; // Make this an option in command line later
+constexpr int transposition_table_size = 2097152; // Make this an option in command line later
 
 class UCIEngine {
 private:
