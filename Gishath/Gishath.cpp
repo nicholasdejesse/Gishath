@@ -1,7 +1,6 @@
 #include <iostream>
 #include "position.h"
 #include "magics.h"
-#include "movegen.h"
 #include "uci.h"
 #include "zobrist.h"
 

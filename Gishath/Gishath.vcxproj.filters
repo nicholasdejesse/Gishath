@@ -24,7 +24,7 @@
     <ClCompile Include="move.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="movegen.cpp">
+    <ClCompile Include="move_gen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="attacks.cpp">
@@ -51,10 +51,10 @@
     <ClCompile Include="zobrist.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gamehistory.cpp">
+    <ClCompile Include="game_history.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="moveorder.cpp">
+    <ClCompile Include="move_order.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -68,7 +68,7 @@
     <ClInclude Include="types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="movegen.h">
+    <ClInclude Include="move_gen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="attacks.h">
@@ -95,13 +95,13 @@
     <ClInclude Include="zobrist.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gamehistory.h">
+    <ClInclude Include="game_history.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="consts.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="moveorder.h">
+    <ClInclude Include="move_order.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -5,8 +5,8 @@
 #include "move.h"
 #include "types.h"
 #include "attacks.h"
-#include "movegen.h"
-#include "gamehistory.h"
+#include "move_gen.h"
+#include "game_history.h"
 #include "consts.h"
 
 class Move;

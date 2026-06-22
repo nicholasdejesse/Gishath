@@ -1,4 +1,4 @@
-#include "gamehistory.h"
+#include "game_history.h"
 
 GameHistory::GameHistory() {
     hashes.reserve(initial_history_length);

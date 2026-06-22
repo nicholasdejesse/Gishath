@@ -3,9 +3,9 @@
 #include "search.h"
 #include "consts.h"
 #include "uci.h"
-#include "movegen.h"
+#include "move_gen.h"
 #include "eval.h"
-#include "moveorder.h"
+#include "move_order.h"
 
 int nodes_visited = 0;
 bool out_of_time = false;
