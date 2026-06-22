@@ -441,3 +441,43 @@ Bitboard Position::pieces() {
 bool Position::threefold_or_50_move() {
     return history.repeated(zobrist) || halfmove_clock >= 100;
 }
+// Determine if move is pseudo-legal (for transposition table)
+bool Position::pseudo_legal(Move m) {
+    Square from = m.get_from();
+
+    // Piece exists
+    if (board_mailbox[from] == no_piece) return false;
+
+    Square to = m.get_to();
+    Piece piece = board_mailbox[from];
+    PieceType type = piecetype_of(piece);
+    Color us = color_of(piece);
+
+    // Not opponent's piece
+    if (us != side_to_move()) return false;
+
+    // Not capturing our own piece
+    if (square_to_bitboard(to) & color_BB[us]) return false;
+
+    // Clear path for sliding 
+    if ((line_between[from][to] & pieces()) != 0) return false;
+
+    // Special cases for castling and en passant
+    MoveType move_type = m.type_of();
+    if (move_type == castle) {
+        bool kingside = (relative_square(us, to) == g1);
+        uint8_t us_kingside_rights = us == white ? WK : WQ;
+        uint8_t us_queenside_rights = us == white ? WQ : BQ;
+        if (kingside) {
+            if ((castle_rights & us_kingside_rights) == 0 || is_attacked(relative_square(us, f1), us)) return false;
+        }
+        else {
+            if ((castle_rights & us_queenside_rights) == 0 || is_attacked(relative_square(us, d1), us)) return false;
+        }
+    }
+    else if (move_type == en_passant) {
+        if (file_of(to) != en_passant_file) return false;
+    }
+
+    return true;
+}

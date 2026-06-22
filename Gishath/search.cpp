@@ -18,7 +18,7 @@ void check_out_of_time() {
     }
 }
 
-int quiescence(Position& pos, int depth, int alpha, int beta) {
+int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable& transposition_table) {
     ++nodes_visited;
     if (nodes_visited % out_of_time_check_freq == 0) {
         check_out_of_time();
@@ -47,7 +47,7 @@ int quiescence(Position& pos, int depth, int alpha, int beta) {
             continue;
         }
         found_legal = true;
-        int score = -1 * quiescence(pos, depth - 1, -beta, -alpha);
+        int score = -1 * quiescence(pos, depth - 1, -beta, -alpha, transposition_table);
         if (score > max) {
             max = score;
             if (score > alpha) {
@@ -64,7 +64,7 @@ int quiescence(Position& pos, int depth, int alpha, int beta) {
 
 }
 
-int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
+int negamax_recursive(Position& pos, int depth, int alpha, int beta, TranspositionTable& transposition_table) {
     ++nodes_visited;
 
     // Call every so often since it is expensive
@@ -76,14 +76,14 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
 
-    if (depth <= 0) return quiescence(pos, depth, alpha, beta); // Don't flip alpha and beta because we aren't going down search tree this call
+    if (depth <= 0) return quiescence(pos, depth, alpha, beta, transposition_table); // Don't flip alpha and beta because we aren't going down search tree this call
 
     Color us = pos.side_to_move();
     // Null move pruning
     // Don't allow when in check or side to move is only king and pawns
     if (depth >= null_move_reduction && !pos.is_checked(us) && !(pos.color_BB[us] & ~pos.type_BB[pawn] & ~pos.type_BB[king])) {
         pos.make_nullmove();
-        int null_score = -1 * negamax_recursive(pos, depth - null_move_reduction, -beta, -beta + 1);
+        int null_score = -1 * negamax_recursive(pos, depth - null_move_reduction, -beta, -beta + 1, transposition_table);
         pos.unmake_nullmove();
         if (null_score >= beta) {
             return null_score;
@@ -104,7 +104,7 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
             continue;
         }
         found_legal = true;
-        int score = -1 * negamax_recursive(pos, depth - 1, -beta, -alpha);
+        int score = -1 * negamax_recursive(pos, depth - 1, -beta, -alpha, transposition_table);
         if (score > max) {
             max = score;
             if (score > alpha) {
@@ -120,7 +120,7 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta) {
     return max;
 }
 
-std::pair<Move, int> negamax(Position& pos, int depth) {
+std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& transposition_table) {
     MoveList ml = generate(pos);
     MoveOrder order = MoveOrder(ml, pos);
 
@@ -139,7 +139,7 @@ std::pair<Move, int> negamax(Position& pos, int depth) {
             pos.unmake_move(m);
             continue;
         }
-        int score = -1 * negamax_recursive(pos, depth - 1, -beta, -alpha);
+        int score = -1 * negamax_recursive(pos, depth - 1, -beta, -alpha, transposition_table);
         if (score > max) {
             max = score;
             best_move = m;
@@ -161,7 +161,7 @@ Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci, int max_dep
     Move best_move;
     int best_score = negative_inf;
     while (!out_of_time && depth <= max_depth) {
-        std::pair<Move, int> curr = negamax(pos, depth);
+        std::pair<Move, int> curr = negamax(pos, depth, uci.transposition_table);
         if (!out_of_time) {
             best_move = curr.first;
             best_score = curr.second;

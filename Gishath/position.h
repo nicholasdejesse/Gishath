@@ -52,6 +52,7 @@ public:
     Color side_to_move();
     Bitboard dangerous(Color us);
     bool legal();
+    bool pseudo_legal(Move m);
     Color to_move() const;
     void load_fen(std::string fen);
     bool has_legal_moves();

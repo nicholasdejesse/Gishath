@@ -5,6 +5,12 @@
 
 class Position;
 
+// Based on stockfish move encoding
+// Bits 0-5: to square (0..63)
+// Bits 6-11: from square (0..63)
+// Bits 12-13: promotion piece type (0..3) (knight, bishop, rook, queen)
+// Bit 14-15: special move flag (0..3) (quiet, promotion, castle, en passant)
+
 class Move {
 public:
     Move();

@@ -57,6 +57,9 @@
     <ClCompile Include="move_order.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="transposition_table.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="position.h">
@@ -102,6 +105,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="move_order.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="transposition_table.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

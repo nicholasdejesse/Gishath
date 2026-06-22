@@ -77,7 +77,7 @@ void UCIEngine::loop() {
 }
 
 void UCIEngine::new_game() {
-    // Need to implement this
+    transposition_table = TranspositionTable(transposition_table_size);
 }
 // Called when "position ..." is passed in, does not reset anything related to current game (i.e. transposition table)
 void UCIEngine::reset_position() {
@@ -97,3 +97,5 @@ int UCIEngine::get_time_for_move(int wtime, int btime) {
     }
     return our_time;
 }
+
+UCIEngine::UCIEngine() : transposition_table(transposition_table_size) {}

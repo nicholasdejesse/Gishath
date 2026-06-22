@@ -1,8 +1,7 @@
-#include <iostream>
-#include "position.h"
 #include "magics.h"
 #include "uci.h"
 #include "zobrist.h"
+#include "attacks.h"
 
 int main()
 {
