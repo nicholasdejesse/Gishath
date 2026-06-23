@@ -68,6 +68,8 @@ void UCIEngine::loop() {
                 int ms_to_search = get_time_for_move(wtime, btime);
                 Move best_move = find_best_move(pos, ms_to_search, *this, max_depth);
                 std::cout << "bestmove " << best_move.to_string() << std::endl;
+                //std::cout << "Transposition table capacity: " << transposition_table.capacity << "/" << transposition_table_size << std::endl;
+                //std::cout << "Transposition table collisions: " << transposition_table.collisions << std::endl;
             }
         }
         else if (input[0] == "quit") {
@@ -77,7 +79,7 @@ void UCIEngine::loop() {
 }
 
 void UCIEngine::new_game() {
-    transposition_table = TranspositionTable(transposition_table_size);
+    transposition_table = TranspositionTable();
 }
 // Called when "position ..." is passed in, does not reset anything related to current game (i.e. transposition table)
 void UCIEngine::reset_position() {
@@ -98,4 +100,4 @@ int UCIEngine::get_time_for_move(int wtime, int btime) {
     return our_time;
 }
 
-UCIEngine::UCIEngine() : transposition_table(transposition_table_size) {}
+UCIEngine::UCIEngine() : transposition_table() {}

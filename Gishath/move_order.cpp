@@ -3,8 +3,8 @@
 #include <cassert>
 #include <iostream>
 
-constexpr int hash_score = 9000;
-constexpr int captures_base_score = 5000;
+constexpr int hash_score = 90000;
+constexpr int captures_base_score = 50000;
 constexpr int quiet_base_score = 0;
 
 // Note that this includes no_piece_type, but it's faster I think
@@ -49,7 +49,6 @@ Move MoveOrder::get_next_move() {
 }
 
 int MoveOrder::score_move(Move m, Position& pos, TranspositionTable& transposition_table) {
-    // TODO: score hash
     Square from = m.get_from();
     Square to = m.get_to();
     PieceType pt = piecetype_of(pos.board_mailbox[from]);

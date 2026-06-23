@@ -179,25 +179,6 @@ std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& trans
 
     int alpha = negative_inf;
     int beta = positive_inf;
-
-    if (transposition_table.contains(pos.zobrist)) {
-        TranspositionEntry tt_entry = transposition_table.get(pos.zobrist);
-        if (tt_entry.depth >= depth && pos.pseudo_legal(tt_entry.best_move)) {
-            switch (tt_entry.flag) {
-            case TranspositionFlag::exact:
-                return std::make_pair(tt_entry.best_move, tt_entry.score);
-            case TranspositionFlag::upper_bound:
-                beta = std::min(beta, tt_entry.score);
-                break;
-            case TranspositionFlag::lower_bound:
-                alpha = std::max(alpha, tt_entry.score);
-                break;
-            }
-            if (alpha >= beta) return std::make_pair(tt_entry.best_move, tt_entry.score);
-        }
-    }
-
-
     int max = negative_inf;
     Move best_move;
     TranspositionFlag flag = TranspositionFlag::upper_bound;

@@ -1,25 +1,39 @@
 #include "transposition_table.h"
+#include <cassert>
+#include <iostream>
+#include <algorithm>
 
 uint32_t TranspositionTable::get_key(Bitboard zobrist) {
     // Use only bottom half of zobrist for hash
-    return zobrist & Bitboard(0xffffffff);
+    assert((transposition_table_size & (transposition_table_size - 1)) == 0);
+    return zobrist & (transposition_table_size - 1);
 }
 
 bool TranspositionTable::contains(Bitboard zobrist) {
     uint32_t key = get_key(zobrist);
-    return table.contains(key);
+    assert(key < table.size());
+    return table[key].zobrist == zobrist && table[key].flag != TranspositionFlag::empty;
 }
 
 TranspositionEntry TranspositionTable::get(Bitboard zobrist) {
     uint32_t key = get_key(zobrist);
-    return table.at(key);
+    return table[key];
 }
 
 void TranspositionTable::insert(TranspositionEntry entry) {
     uint32_t key = get_key(entry.zobrist);
-    table.try_emplace(key, entry.zobrist, entry.best_move, entry.score, entry.depth, entry.flag); // Using always replace scheme
+    //if (table[key].flag == TranspositionFlag::empty) {
+    //    ++capacity;
+    //}
+    //else {
+    //    if (table[key].zobrist != entry.zobrist) ++collisions;
+    //}
+    if (table[key].flag == TranspositionFlag::empty || table[key].depth <= entry.depth)
+        table[key] = entry; // Using depth replacement scheme
 }
 
-TranspositionTable::TranspositionTable(size_t table_size) : table{} {
-    table.reserve(table_size);
+TranspositionTable::TranspositionTable() {
+    table = std::vector<TranspositionEntry>(transposition_table_size, TranspositionEntry(0, 0, 0, 0, TranspositionFlag::empty));
+    //capacity = 0;
+    //collisions = 0;
 }
