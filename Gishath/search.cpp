@@ -1,5 +1,6 @@
 #include <chrono>
 #include <utility>
+#include <algorithm>
 #include "search.h"
 #include "consts.h"
 #include "uci.h"
@@ -10,6 +11,16 @@
 int nodes_visited = 0;
 bool out_of_time = false;
 std::chrono::time_point<std::chrono::steady_clock> end_time;
+
+int16_t clamp_score_to_mate(int score) {
+    return std::min(checkmate_score, std::max(-checkmate_score, score));
+}
+
+int16_t get_depth_adjusted_mate_score(int score, int depth) {
+    if (score >= checkmate_score) return checkmate_score + depth;
+    if (score <= -checkmate_score) return checkmate_score - depth;
+    return score;
+}
 
 void check_out_of_time() {
     auto time_now = std::chrono::steady_clock::now();
@@ -23,7 +34,7 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
     if (nodes_visited % out_of_time_check_freq == 0) {
         check_out_of_time();
     }
-    if (pos.threefold_or_50_move())
+    if (pos.threefold_or_50_move() || pos.insufficient_material())
         return draw_score;
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
@@ -33,15 +44,15 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
         if (tt_entry.depth >= depth && pos.pseudo_legal(tt_entry.best_move)) {
             switch (tt_entry.flag) {
             case TranspositionFlag::exact:
-                return tt_entry.score;
+                return get_depth_adjusted_mate_score(tt_entry.score, depth);
             case TranspositionFlag::upper_bound:
-                beta = std::min(beta, tt_entry.score);
+                beta = std::min<int>(beta, get_depth_adjusted_mate_score(tt_entry.score, depth));
                 break;
             case TranspositionFlag::lower_bound:
-                alpha = std::max(alpha, tt_entry.score);
+                alpha = std::max<int>(alpha, get_depth_adjusted_mate_score(tt_entry.score, depth));
                 break;
             }
-            if (alpha >= beta) return tt_entry.score;
+            if (alpha >= beta) return get_depth_adjusted_mate_score(tt_entry.score, depth);
         }
     }
 
@@ -76,13 +87,13 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
         }
         pos.unmake_move(m);
         if (score >= beta) {
-            transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, max, depth, TranspositionFlag::lower_bound));
+            transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound));
             return max;
         }
     }
     if (!found_legal) return evaluate_position(pos, depth);
 
-    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, max, depth, flag));
+    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag));
 
     return max;
 
@@ -98,7 +109,7 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
 
-    if (pos.threefold_or_50_move())
+    if (pos.threefold_or_50_move() || pos.insufficient_material())
         return draw_score;
 
     if (transposition_table.contains(pos.zobrist)) {
@@ -106,15 +117,15 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
         if (tt_entry.depth >= depth && pos.pseudo_legal(tt_entry.best_move)) {
             switch (tt_entry.flag) {
             case TranspositionFlag::exact:
-                return tt_entry.score;
+                return get_depth_adjusted_mate_score(tt_entry.score, depth);
             case TranspositionFlag::upper_bound:
-                beta = std::min(beta, tt_entry.score);
+                beta = std::min<int>(beta, get_depth_adjusted_mate_score(tt_entry.score, depth));
                 break;
             case TranspositionFlag::lower_bound:
-                alpha = std::max(alpha, tt_entry.score);
+                alpha = std::max<int>(alpha, get_depth_adjusted_mate_score(tt_entry.score, depth));
                 break;
             }
-            if (alpha >= beta) return tt_entry.score;
+            if (alpha >= beta) return get_depth_adjusted_mate_score(tt_entry.score, depth);
         }
     }
 
@@ -159,13 +170,13 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
         }
         pos.unmake_move(m);
         if (score >= beta) {
-            transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, max, depth, TranspositionFlag::lower_bound));
+            transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound));
             return max;
         }
     }
     if (!found_legal) return evaluate_position(pos, depth);
 
-    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, max, depth, flag));
+    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag));
 
     return max;
 }
@@ -203,7 +214,7 @@ std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& trans
         pos.unmake_move(m);
     }
 
-    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, max, depth, flag));
+    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag));
 
     return std::make_pair(best_move, max);
 }

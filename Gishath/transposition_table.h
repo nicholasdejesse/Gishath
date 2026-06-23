@@ -14,7 +14,7 @@ enum class TranspositionFlag {
 struct TranspositionEntry {
     Bitboard zobrist = 0;
     Move best_move = 0;
-    int32_t score = 0;
+    int16_t score = 0;
     int8_t depth = 0;
     TranspositionFlag flag = TranspositionFlag::exact;
 };

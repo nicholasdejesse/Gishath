@@ -3,7 +3,7 @@
 
 int evaluate_position(Position& pos, int depth) {
     // Return draw on first repetition to avoid wasted computation
-    if (pos.threefold_or_50_move()) return draw_score;
+    if (pos.threefold_or_50_move() || pos.insufficient_material()) return draw_score;
     // This is a slow way of detecting this, should update later
     if (!pos.has_legal_moves()) {
         if (pos.is_checked(pos.side_to_move())) {

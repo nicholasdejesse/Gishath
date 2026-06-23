@@ -57,6 +57,7 @@ public:
     void load_fen(std::string fen);
     bool has_legal_moves();
     bool threefold_or_50_move();
+    bool insufficient_material();
 
     Position();
 };
