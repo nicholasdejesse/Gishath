@@ -1,14 +1,14 @@
 #include "eval.h"
 #include "consts.h"
 
-int evaluate_position(Position& pos, int depth) {
+int evaluate_position(Position& pos, int ply) {
     // Return draw on first repetition to avoid wasted computation
     if (pos.threefold_or_50_move() || pos.insufficient_material()) return draw_score;
     // This is a slow way of detecting this, should update later
     if (!pos.has_legal_moves()) {
         if (pos.is_checked(pos.side_to_move())) {
             // Prefer faster checkmates, so if depth is still high (early in search) the score is worse
-            return -(checkmate_score + depth);
+            return -(checkmate_score - ply);
         }
         else {
             return draw_score;

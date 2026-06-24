@@ -24,7 +24,6 @@ private:
     void put_piece(Square to, Piece piece);
     void remove_piece(Square from);
     constexpr int unmake_index() const;
-    int ply = 0;
     std::array<UnmakeInfo, max_ply> unmake_stack;
 
 public:
@@ -38,6 +37,7 @@ public:
     int8_t en_passant_file;
     GameHistory history;
     Bitboard zobrist = 0;
+    int ply = 0;
 
     Bitboard pieces();
 
