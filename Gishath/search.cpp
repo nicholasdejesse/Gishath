@@ -39,11 +39,11 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
 
-    if (transposition_table.contains(pos.zobrist)) {
-        TranspositionEntry tt_entry = transposition_table.get(pos.zobrist);
-        if (tt_entry.depth >= depth && pos.pseudo_legal(tt_entry.best_move)) {
-            int depth_adjusted_score = get_ply_adjusted_mate_score(tt_entry.score, pos.ply);
-            switch (tt_entry.flag) {
+    TranspositionEntry* tt_entry = transposition_table.probe(pos.zobrist);
+    if (tt_entry) {
+        if (tt_entry->depth >= depth && pos.pseudo_legal(tt_entry->best_move)) {
+            int depth_adjusted_score = get_ply_adjusted_mate_score(tt_entry->score, pos.ply);
+            switch (tt_entry->flag) {
             case TranspositionFlag::exact:
                 return depth_adjusted_score;
             case TranspositionFlag::upper_bound:
@@ -56,6 +56,7 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
             if (alpha >= beta) return depth_adjusted_score;
         }
     }
+
 
     int max = evaluate_position(pos, pos.ply);
     if (max >= beta)
@@ -88,13 +89,13 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
         }
         pos.unmake_move(m);
         if (score >= beta) {
-            transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound));
+            transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound);
             return max;
         }
     }
     if (!found_legal) return evaluate_position(pos, pos.ply);
 
-    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag));
+    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag);
 
     return max;
 
@@ -113,11 +114,11 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
     if (pos.threefold_or_50_move() || pos.insufficient_material())
         return draw_score;
 
-    if (transposition_table.contains(pos.zobrist)) {
-        TranspositionEntry tt_entry = transposition_table.get(pos.zobrist);
-        if (tt_entry.depth >= depth && pos.pseudo_legal(tt_entry.best_move)) {
-            int depth_adjusted_score = get_ply_adjusted_mate_score(tt_entry.score, pos.ply);
-            switch (tt_entry.flag) {
+    TranspositionEntry* tt_entry = transposition_table.probe(pos.zobrist);
+    if (tt_entry) {
+        if (tt_entry->depth >= depth && pos.pseudo_legal(tt_entry->best_move)) {
+            int depth_adjusted_score = get_ply_adjusted_mate_score(tt_entry->score, pos.ply);
+            switch (tt_entry->flag) {
             case TranspositionFlag::exact:
                 return depth_adjusted_score;
             case TranspositionFlag::upper_bound:
@@ -172,13 +173,13 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
         }
         pos.unmake_move(m);
         if (score >= beta) {
-            transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound));
+            transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound);
             return max;
         }
     }
     if (!found_legal) return evaluate_position(pos, pos.ply);
 
-    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag));
+    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag);
 
     return max;
 }
@@ -216,7 +217,7 @@ std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& trans
         pos.unmake_move(m);
     }
 
-    transposition_table.insert(TranspositionEntry(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag));
+    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag);
 
     return std::make_pair(best_move, max);
 }

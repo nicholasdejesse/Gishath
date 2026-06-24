@@ -54,9 +54,9 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionTable& transpositi
     PieceType pt = piecetype_of(pos.board_mailbox[from]);
     PieceType capturing = piecetype_of(pos.board_mailbox[to]);
 
-    if (transposition_table.contains(pos.zobrist)) {
-        TranspositionEntry entry = transposition_table.get(pos.zobrist);
-        if (m == entry.best_move && pos.pseudo_legal(entry.best_move)) {
+    TranspositionEntry* tt_entry = transposition_table.probe(pos.zobrist);
+    if (tt_entry) {
+        if (m == tt_entry->best_move && pos.pseudo_legal(tt_entry->best_move)) {
             return hash_score;
         }
     }

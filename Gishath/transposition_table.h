@@ -25,11 +25,8 @@ private:
     uint32_t get_key(Bitboard zobrist);
 
 public:
-    bool contains(Bitboard zobrist);
-    TranspositionEntry get(Bitboard zobrist);
-    void insert(TranspositionEntry entry);
-    //int capacity = 0;
-    //int collisions = 0;
+    TranspositionEntry* probe(Bitboard zobrist);
+    void insert(Bitboard zobrist, Move best_move, int16_t score, int8_t depth, TranspositionFlag flag);
 
     TranspositionTable();
 };

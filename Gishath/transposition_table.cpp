@@ -4,36 +4,24 @@
 #include <algorithm>
 
 uint32_t TranspositionTable::get_key(Bitboard zobrist) {
-    // Use only bottom half of zobrist for hash
     assert((transposition_table_size & (transposition_table_size - 1)) == 0);
     return zobrist & (transposition_table_size - 1);
 }
 
-bool TranspositionTable::contains(Bitboard zobrist) {
+TranspositionEntry* TranspositionTable::probe(Bitboard zobrist) {
     uint32_t key = get_key(zobrist);
-    assert(key < table.size());
-    return table[key].zobrist == zobrist && table[key].flag != TranspositionFlag::empty;
+    TranspositionEntry* entry = &table[key];
+    if (entry->zobrist == zobrist && entry->flag != TranspositionFlag::empty) {
+        return entry;
+    }
+    return nullptr;
 }
 
-TranspositionEntry TranspositionTable::get(Bitboard zobrist) {
+void TranspositionTable::insert(Bitboard zobrist, Move best_move, int16_t score, int8_t depth, TranspositionFlag flag) {
     uint32_t key = get_key(zobrist);
-    return table[key];
+    if (table[key].flag == TranspositionFlag::empty || table[key].depth <= depth) {
+        table[key] = { zobrist, best_move, score, depth, flag }; // Using depth replacement scheme
+    }
 }
 
-void TranspositionTable::insert(TranspositionEntry entry) {
-    uint32_t key = get_key(entry.zobrist);
-    //if (table[key].flag == TranspositionFlag::empty) {
-    //    ++capacity;
-    //}
-    //else {
-    //    if (table[key].zobrist != entry.zobrist) ++collisions;
-    //}
-    if (table[key].flag == TranspositionFlag::empty || table[key].depth <= entry.depth)
-        table[key] = entry; // Using depth replacement scheme
-}
-
-TranspositionTable::TranspositionTable() {
-    table = std::vector<TranspositionEntry>(transposition_table_size, TranspositionEntry(0, 0, 0, 0, TranspositionFlag::empty));
-    //capacity = 0;
-    //collisions = 0;
-}
+TranspositionTable::TranspositionTable() : table(transposition_table_size, TranspositionEntry(0, 0, 0, 0, TranspositionFlag::empty)) {}
