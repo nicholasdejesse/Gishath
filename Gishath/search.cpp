@@ -8,6 +8,7 @@
 #include "eval.h"
 #include "move_order.h"
 
+uint8_t age = 0;
 int nodes_visited = 0;
 bool out_of_time = false;
 std::chrono::time_point<std::chrono::steady_clock> end_time;
@@ -136,7 +137,7 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
 
     Color us = pos.side_to_move();
     // Null move pruning
-    // Don't allow when in check or side to move is only king and pawns
+    // Don't allow when in check or side to move is only king and pawns (zugzwang)
     if (depth >= null_move_reduction && !pos.is_checked(us) && !(pos.color_BB[us] & ~pos.type_BB[pawn] & ~pos.type_BB[king])) {
         pos.make_nullmove();
         int null_score = -1 * negamax_recursive(pos, depth - null_move_reduction, -beta, -beta + 1, transposition_table);
@@ -223,9 +224,14 @@ std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& trans
 }
 
 Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci, int max_depth = 9999) {
+    ++age;
     nodes_visited = 0;
     out_of_time = false;
     end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms_to_search);
+    //uci.transposition_table.hit_count = 0;
+    //uci.transposition_table.probe_count = 0;
+    //uci.transposition_table.insert_empty_count = 0;
+    //uci.transposition_table.replace_count = 0;
 
     int depth = 1;
     Move best_move;
@@ -239,6 +245,10 @@ Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci, int max_dep
         uci.write_search_info(depth, best_score, nodes_visited);
         ++depth;
     }
-    
+    //std::cout << "Hit count:     " << uci.transposition_table.hit_count << "\n";
+    //std::cout << "Probe count:   " << uci.transposition_table.probe_count << "\n";
+    //std::cout << "Insert empty:  " << uci.transposition_table.insert_empty_count << "\n";
+    //std::cout << "Replace count: " << uci.transposition_table.replace_count << "\n";
+
     return best_move;
 }
