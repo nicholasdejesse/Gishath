@@ -8,6 +8,7 @@
 #include "eval.h"
 #include "move_order.h"
 
+Bitboard prev_zobrist = 0;
 uint8_t age = 0;
 int nodes_visited = 0;
 bool out_of_time = false;
@@ -58,7 +59,6 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
         }
     }
 
-
     int max = evaluate_position(pos, pos.ply);
     if (max >= beta)
         return max;
@@ -90,13 +90,13 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
         }
         pos.unmake_move(m);
         if (score >= beta) {
-            transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound);
+            transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound, age);
             return max;
         }
     }
     if (!found_legal) return evaluate_position(pos, pos.ply);
 
-    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag);
+    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag, age);
 
     return max;
 
@@ -143,6 +143,7 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
         int null_score = -1 * negamax_recursive(pos, depth - null_move_reduction, -beta, -beta + 1, transposition_table);
         pos.unmake_nullmove();
         if (null_score >= beta) {
+            transposition_table.insert(pos.zobrist, Move(0), clamp_score_to_mate(null_score), depth, TranspositionFlag::lower_bound, age);
             return null_score;
         }
     }
@@ -174,13 +175,14 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
         }
         pos.unmake_move(m);
         if (score >= beta) {
-            transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound);
+            transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound, age);
             return max;
         }
     }
     if (!found_legal) return evaluate_position(pos, pos.ply);
 
-    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag);
+
+    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag, age);
 
     return max;
 }
@@ -190,7 +192,6 @@ std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& trans
     MoveOrder order = MoveOrder(ml, pos, transposition_table);
 
     assert(ml.count > 0);
-
 
     int alpha = negative_inf;
     int beta = positive_inf;
@@ -218,20 +219,21 @@ std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& trans
         pos.unmake_move(m);
     }
 
-    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag);
+    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag, age);
 
     return std::make_pair(best_move, max);
 }
 
 Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci, int max_depth = 9999) {
-    ++age;
+    // Prevent age increase from searching same position twice
+    // (Won't happen in engine play but maybe analysis idk)
+    if (pos.zobrist != prev_zobrist) {
+        ++age;
+        prev_zobrist = pos.zobrist;
+    }
     nodes_visited = 0;
     out_of_time = false;
     end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms_to_search);
-    //uci.transposition_table.hit_count = 0;
-    //uci.transposition_table.probe_count = 0;
-    //uci.transposition_table.insert_empty_count = 0;
-    //uci.transposition_table.replace_count = 0;
 
     int depth = 1;
     Move best_move;
@@ -241,14 +243,10 @@ Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci, int max_dep
         if (!out_of_time) {
             best_move = curr.first;
             best_score = curr.second;
+            uci.write_search_info(depth, best_score, nodes_visited);
         }
-        uci.write_search_info(depth, best_score, nodes_visited);
         ++depth;
     }
-    //std::cout << "Hit count:     " << uci.transposition_table.hit_count << "\n";
-    //std::cout << "Probe count:   " << uci.transposition_table.probe_count << "\n";
-    //std::cout << "Insert empty:  " << uci.transposition_table.insert_empty_count << "\n";
-    //std::cout << "Replace count: " << uci.transposition_table.replace_count << "\n";
 
     return best_move;
 }

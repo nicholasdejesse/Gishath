@@ -61,9 +61,10 @@ void UCIEngine::loop() {
                 int wtime = 5000 * 20;
                 int btime = 5000 * 20;
                 // This logic is a bit frail, should switch later
-                if (input_size > 5 && input[1] == "wtime" && input[3] == "btime") {
+                if (input_size >= 5 && input[1] == "wtime" && input[3] == "btime") {
                     wtime = std::stoi(input[2]);
                     btime = std::stoi(input[4]);
+                    std::cout << wtime << " " << btime;
                 }
                 int ms_to_search = get_time_for_move(wtime, btime);
                 Move best_move = find_best_move(pos, ms_to_search, *this, max_depth);

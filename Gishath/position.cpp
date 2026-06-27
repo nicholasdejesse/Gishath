@@ -218,10 +218,14 @@ void Position::make_move(Move m, bool fen_setup) {
     }
     else if (type == rook) {
         if (from == relative_square(us, h1)) {
+            zobrist ^= zobrist_castling[castle_rights];
             castle_rights &= ~(us == white ? WK : BK);
+            zobrist ^= zobrist_castling[castle_rights];
         }
         else if (from == relative_square(us, a1)) {
+            zobrist ^= zobrist_castling[castle_rights];
             castle_rights &= ~(us == white ? WQ : BQ);
+            zobrist ^= zobrist_castling[castle_rights];
         }
     }
 
@@ -443,6 +447,8 @@ bool Position::threefold_or_50_move() {
 }
 // Determine if move is pseudo-legal (for transposition table)
 bool Position::pseudo_legal(Move m) {
+    if (m.is_null()) return true;
+
     Square from = m.get_from();
 
     // Piece exists

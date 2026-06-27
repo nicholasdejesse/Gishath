@@ -88,3 +88,7 @@ std::string Move::to_string() {
     }
     return res;
 }
+
+bool Move::is_null() {
+    return m_Move == 0;
+}

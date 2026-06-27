@@ -26,6 +26,7 @@ public:
 
     MoveType type_of();
     PieceType get_promotion_piece_type();
+    bool is_null();
         
     void operator=(Move a);
     bool operator==(Move a) const;

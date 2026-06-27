@@ -15,4 +15,5 @@ constexpr int out_of_time_check_freq = 2048; // How many nodes to visit before r
 
 // Transposition table
 constexpr int transposition_table_size = 8388608; // Make this an option in command line later
-constexpr int transposition_table_bucket_size = 2; // Number of buckets per index in transposition table
+constexpr int transposition_table_bucket_size = 4; // Number of buckets per index in transposition table
+constexpr int transposition_table_age_cutoff = 1; // Number of moves until an entry is always replaced
