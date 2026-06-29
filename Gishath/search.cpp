@@ -11,16 +11,19 @@
 Bitboard prev_zobrist = 0;
 uint8_t age = 0;
 int nodes_visited = 0;
+int seldepth = 0;
 bool out_of_time = false;
 std::chrono::time_point<std::chrono::steady_clock> end_time;
 
-int16_t clamp_score_to_mate(int score) {
-    return std::min(checkmate_score, std::max(-checkmate_score, score));
+int16_t adjust_score_for_tt(int score, int ply) {
+    if (score >= checkmate_score - max_ply)  return score + ply;
+    if (score <= -checkmate_score + max_ply) return score - ply;
+    return score;
 }
 
 int16_t get_ply_adjusted_mate_score(int score, int ply) {
-    if (score >= checkmate_score) return checkmate_score + ply;
-    if (score <= -checkmate_score) return checkmate_score - ply;
+    if (score >= checkmate_score - max_ply) return score - ply;
+    if (score <= -checkmate_score + max_ply) return score + ply;
     return score;
 }
 
@@ -31,7 +34,7 @@ void check_out_of_time() {
     }
 }
 
-int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable& transposition_table) {
+int quiescence(Position& pos, int depth, int ply, int alpha, int beta, TranspositionTable& transposition_table) {
     ++nodes_visited;
     if (nodes_visited % out_of_time_check_freq == 0) {
         check_out_of_time();
@@ -44,7 +47,7 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
     TranspositionEntry* tt_entry = transposition_table.probe(pos.zobrist);
     if (tt_entry) {
         if (tt_entry->depth >= depth && pos.pseudo_legal(tt_entry->best_move)) {
-            int depth_adjusted_score = get_ply_adjusted_mate_score(tt_entry->score, pos.ply);
+            int depth_adjusted_score = get_ply_adjusted_mate_score(tt_entry->score, ply);
             switch (tt_entry->flag) {
             case TranspositionFlag::exact:
                 return depth_adjusted_score;
@@ -59,15 +62,15 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
         }
     }
 
-    int max = evaluate_position(pos, pos.ply);
+    int max = evaluate_position(pos);
     if (max >= beta)
         return max;
     if (max > alpha)
         alpha = max;
 
-    MoveList ml = generate_by_type<GenType::captures>(pos);
+    bool is_check = pos.is_checked(pos.side_to_move());
+    MoveList ml = is_check ? generate(pos) : generate_by_type<GenType::captures>(pos); // This needs to switch to only generate evasions
     MoveOrder order = MoveOrder(ml, pos, transposition_table);
-    if (ml.count == 0) return max;
 
     bool found_legal = false;
     Move best_move = Move();
@@ -80,7 +83,7 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
             continue;
         }
         found_legal = true;
-        int score = -1 * quiescence(pos, depth - 1, -beta, -alpha, transposition_table);
+        int score = -1 * quiescence(pos, depth - 1, ply + 1, -beta, -alpha, transposition_table);
         if (score > max) {
             max = score;
             best_move = m;
@@ -90,19 +93,26 @@ int quiescence(Position& pos, int depth, int alpha, int beta, TranspositionTable
         }
         pos.unmake_move(m);
         if (score >= beta) {
-            transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound, age);
+            transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), depth, TranspositionFlag::lower_bound, age);
             return max;
         }
     }
-    if (!found_legal) return evaluate_position(pos, pos.ply);
+    if (!found_legal) {
+        if (pos.is_checked(pos.side_to_move())) {
+            return -(checkmate_score - ply);
+        }
+        else {
+            return draw_score;
+        }
+    }
 
-    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag, age);
-
+    transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), depth, flag, age);
+    if (depth < seldepth) seldepth = depth;
     return max;
 
 }
 
-int negamax_recursive(Position& pos, int depth, int alpha, int beta, TranspositionTable& transposition_table) {
+int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, TranspositionTable& transposition_table) {
     ++nodes_visited;
 
     // Call every so often since it is expensive
@@ -118,7 +128,7 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
     TranspositionEntry* tt_entry = transposition_table.probe(pos.zobrist);
     if (tt_entry) {
         if (tt_entry->depth >= depth && pos.pseudo_legal(tt_entry->best_move)) {
-            int depth_adjusted_score = get_ply_adjusted_mate_score(tt_entry->score, pos.ply);
+            int depth_adjusted_score = get_ply_adjusted_mate_score(tt_entry->score, ply);
             switch (tt_entry->flag) {
             case TranspositionFlag::exact:
                 return depth_adjusted_score;
@@ -133,24 +143,32 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
         }
     }
 
-    if (depth <= 0) return quiescence(pos, depth, alpha, beta, transposition_table); // Don't flip alpha and beta because we aren't going down search tree this call
+    if (depth <= 0) return quiescence(pos, depth, ply, alpha, beta, transposition_table); // Don't flip alpha and beta because we aren't going down search tree this call
 
     Color us = pos.side_to_move();
+    bool is_checked = pos.is_checked(us);
     // Null move pruning
     // Don't allow when in check or side to move is only king and pawns (zugzwang)
-    if (depth >= null_move_reduction && !pos.is_checked(us) && !(pos.color_BB[us] & ~pos.type_BB[pawn] & ~pos.type_BB[king])) {
+    if (depth >= null_move_reduction && !pos.is_checked(us) && (pos.color_BB[us] & ~pos.type_BB[pawn] & ~pos.type_BB[king])) {
         pos.make_nullmove();
-        int null_score = -1 * negamax_recursive(pos, depth - null_move_reduction, -beta, -beta + 1, transposition_table);
+        int null_score = -1 * pvs_recursive(pos, depth - null_move_reduction, ply + 1, -beta, -beta + 1, transposition_table);
         pos.unmake_nullmove();
         if (null_score >= beta) {
-            transposition_table.insert(pos.zobrist, Move(0), clamp_score_to_mate(null_score), depth, TranspositionFlag::lower_bound, age);
+            transposition_table.insert(pos.zobrist, Move(0), adjust_score_for_tt(null_score, ply), depth, TranspositionFlag::lower_bound, age);
             return null_score;
         }
     }
 
+    // Reverse futility pruning
+    int eval = evaluate_position(pos);
+    int margin = reverse_futility_pruning_factor * depth;
+    // Not in check, not PV node, not checkmate
+    if (!is_checked && beta - alpha <= 1 && eval >= beta + margin && std::abs(beta) < checkmate_score - max_ply) {
+        return eval;
+    }
+
     MoveList ml = generate(pos);
     MoveOrder order = MoveOrder(ml, pos, transposition_table);
-    if (ml.count == 0) return evaluate_position(pos, pos.ply);
 
     bool found_legal = false;
     int max = negative_inf;
@@ -164,7 +182,15 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
             continue;
         }
         found_legal = true;
-        int score = -1 * negamax_recursive(pos, depth - 1, -beta, -alpha, transposition_table);
+        int score;
+        if (i == 0) {
+            score = -1 * pvs_recursive(pos, depth - 1, ply + 1, -beta, -alpha, transposition_table);
+        }
+        else {
+            score = -1 * pvs_recursive(pos, depth - 1, ply + 1, -alpha - 1, -alpha, transposition_table);
+            if (score > alpha && beta - alpha > 1)
+                score = -1 * pvs_recursive(pos, depth - 1, ply + 1, -beta, -alpha, transposition_table);
+        }
         if (score > max) {
             max = score;
             best_move = m;
@@ -175,19 +201,28 @@ int negamax_recursive(Position& pos, int depth, int alpha, int beta, Transpositi
         }
         pos.unmake_move(m);
         if (score >= beta) {
-            transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, TranspositionFlag::lower_bound, age);
+            transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), depth, TranspositionFlag::lower_bound, age);
             return max;
         }
     }
-    if (!found_legal) return evaluate_position(pos, pos.ply);
+    if (!found_legal) {
+        if (!found_legal) {
+            if (is_checked) {
+                return -(checkmate_score - ply);
+            }
+            else {
+                return draw_score;
+            }
+        }
+    }
 
 
-    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag, age);
-
+    transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), depth, flag, age);
+    if (depth < seldepth) seldepth = depth;
     return max;
 }
 
-std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& transposition_table) {
+std::pair<Move, int> pvs(Position& pos, int depth, TranspositionTable& transposition_table) {
     MoveList ml = generate(pos);
     MoveOrder order = MoveOrder(ml, pos, transposition_table);
 
@@ -207,7 +242,15 @@ std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& trans
             pos.unmake_move(m);
             continue;
         }
-        int score = -1 * negamax_recursive(pos, depth - 1, -beta, -alpha, transposition_table);
+        int score;
+        if (i == 0) {
+            score = -1 * pvs_recursive(pos, depth - 1, 1,  -beta, -alpha, transposition_table);
+        }
+        else {
+            score = -1 * pvs_recursive(pos, depth - 1, 1, -alpha - 1, -alpha, transposition_table);
+            if (score > alpha && beta - alpha > 1)
+                score = -1 * pvs_recursive(pos, depth - 1, 1, -beta, -alpha, transposition_table);
+        }
         if (score > max) {
             max = score;
             best_move = m;
@@ -219,7 +262,7 @@ std::pair<Move, int> negamax(Position& pos, int depth, TranspositionTable& trans
         pos.unmake_move(m);
     }
 
-    transposition_table.insert(pos.zobrist, best_move, clamp_score_to_mate(max), depth, flag, age);
+    transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, 0), depth, flag, age);
 
     return std::make_pair(best_move, max);
 }
@@ -232,6 +275,7 @@ Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci, int max_dep
         prev_zobrist = pos.zobrist;
     }
     nodes_visited = 0;
+    seldepth = 0;
     out_of_time = false;
     end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms_to_search);
 
@@ -239,13 +283,14 @@ Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci, int max_dep
     Move best_move;
     int best_score = negative_inf;
     while (!out_of_time && depth <= max_depth) {
-        std::pair<Move, int> curr = negamax(pos, depth, uci.transposition_table);
+        std::pair<Move, int> curr = pvs(pos, depth, uci.transposition_table);
         if (!out_of_time) {
             best_move = curr.first;
             best_score = curr.second;
-            uci.write_search_info(depth, best_score, nodes_visited);
+            uci.write_search_info(depth, std::max(depth, depth - seldepth), best_score, nodes_visited);
+            ++depth;
+            if (best_score > checkmate_score - max_ply) break;
         }
-        ++depth;
     }
 
     return best_move;

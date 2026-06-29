@@ -196,4 +196,4 @@ constexpr auto eg_table = []() constexpr {
 }();
 
 
-int evaluate_position(Position& pos, int depth);
+int evaluate_position(Position& pos);

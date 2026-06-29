@@ -20,7 +20,7 @@ private:
 public:
     TranspositionTable transposition_table;
     void loop();
-    void write_search_info(int depth, int score, int nodes_visited);
+    void write_search_info(int depth, int seldepth, int score, int nodes_visited);
 
     UCIEngine();
 };

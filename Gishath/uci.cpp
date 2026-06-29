@@ -87,8 +87,11 @@ void UCIEngine::reset_position() {
     pos = Position();
 }
 
-void UCIEngine::write_search_info(int depth, int score, int nodes_visited) {
-    std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes_visited << std::endl;
+void UCIEngine::write_search_info(int depth, int seldepth, int score, int nodes_visited) {
+    if (depth == seldepth)
+        std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes_visited << std::endl;
+    else
+        std::cout << "info depth " << depth << " seldepth " << seldepth << " score cp " << score << " nodes " << nodes_visited << std::endl;
 }
 
 int UCIEngine::get_time_for_move(int wtime, int btime) {
