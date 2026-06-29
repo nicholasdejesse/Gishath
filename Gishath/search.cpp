@@ -97,13 +97,8 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, Transposi
             return max;
         }
     }
-    if (!found_legal) {
-        if (pos.is_checked(pos.side_to_move())) {
-            return -(checkmate_score - ply);
-        }
-        else {
-            return draw_score;
-        }
+    if (!found_legal && pos.is_checked(pos.side_to_move())) {
+        return -(checkmate_score - ply);
     }
 
     transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), depth, flag, age);
