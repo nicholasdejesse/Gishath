@@ -206,16 +206,13 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, Transp
         }
     }
     if (!found_legal) {
-        if (!found_legal) {
-            if (is_checked) {
-                return -(checkmate_score - ply);
-            }
-            else {
-                return draw_score;
-            }
+        if (is_checked) {
+            return -(checkmate_score - ply);
+        }
+        else {
+            return draw_score;
         }
     }
-
 
     transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), depth, flag, age);
     if (depth < seldepth) seldepth = depth;
