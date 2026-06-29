@@ -5,6 +5,8 @@
 
 constexpr int hash_score = 90000;
 constexpr int captures_base_score = 50000;
+constexpr int killer_score_1 = 30000;
+constexpr int killer_score_2 = 29000;
 constexpr int quiet_base_score = 0;
 
 // Note that this includes no_piece_type, but it's faster I think
@@ -18,9 +20,9 @@ constexpr std::array<std::array<int, piece_type_num>, piece_type_num> mvv_lva_ta
     {0, 0, 0, 0, 0, 0, 0}, // king victim
 }};
 
-MoveOrder::MoveOrder(MoveList& ml, Position& pos, TranspositionTable& transposition_table) : ml(ml), pos(pos), idx_sorted(0), scores{} {
+MoveOrder::MoveOrder(MoveList& ml, Position& pos, TranspositionTable& transposition_table, std::array<std::array<Move, killers_per_ply>, max_ply>& killers, int ply) : ml(ml), pos(pos), idx_sorted(0), scores{} {
     for (int i = 0; i < ml.count; ++i) {
-        scores[i] = score_move(ml.moves[i], pos, transposition_table);
+        scores[i] = score_move(ml.moves[i], pos, transposition_table, killers, ply);
     }
 }
 
@@ -48,7 +50,7 @@ Move MoveOrder::get_next_move() {
     return ml.moves[idx_sorted - 1];
 }
 
-int MoveOrder::score_move(Move m, Position& pos, TranspositionTable& transposition_table) {
+int MoveOrder::score_move(Move m, Position& pos, TranspositionTable& transposition_table, std::array<std::array<Move, killers_per_ply>, max_ply>& killers, int ply) {
     Square from = m.get_from();
     Square to = m.get_to();
     PieceType pt = piecetype_of(pos.board_mailbox[from]);
@@ -63,6 +65,13 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionTable& transpositi
 
     if (capturing != no_piece_type) {
         return captures_base_score + mvv_lva_table[capturing][pt];
+    }
+
+    if (m == killers[ply][0]) {
+        return killer_score_1;
+    }
+    if (m == killers[ply][1]) {
+        return killer_score_2;
     }
 
     return quiet_base_score;

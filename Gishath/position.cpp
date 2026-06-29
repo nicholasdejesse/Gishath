@@ -493,3 +493,7 @@ bool Position::insufficient_material() {
     if (pop >= 4) return false;
     return true;
 }
+bool Position::is_capture(Move m) {
+    if (m.type_of() == en_passant) return true;
+    return color_BB[Color(1-side_to_move())] & square_to_bitboard(m.get_to());
+}

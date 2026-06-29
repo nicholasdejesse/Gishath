@@ -47,6 +47,7 @@ public:
     void unmake_move(Move move);
     void make_nullmove();
     void unmake_nullmove();
+
     bool is_attacked(Square sq, Color us);
     bool is_checked(Color us);
     Color side_to_move();
@@ -58,6 +59,7 @@ public:
     bool has_legal_moves();
     bool threefold_or_50_move();
     bool insufficient_material();
+    bool is_capture(Move m);
 
     Position();
 };
