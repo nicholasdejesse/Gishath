@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "attacks.h"
 #include "eval.h"
 #include "consts.h"
 #include "bitboard.h"
@@ -60,6 +61,30 @@ int evaluate_position(Position& pos) {
     else if (wk & wq_castle_squares) eval -= std::max(0, 2 - popcount(pos.type_BB[pawn] & pos.color_BB[white] & wq_shield_pawn_mask)) * eval_castle_missing_shield_pawn_penalty * mg_phase / 24;
     if (bk & wk_castle_squares) eval += std::max(0, 2 - popcount(pos.type_BB[pawn] & pos.color_BB[black] & bk_shield_pawn_mask)) * eval_castle_missing_shield_pawn_penalty * mg_phase / 24;
     else if (bk & wq_castle_squares) eval += std::max(0, 2 - popcount(pos.type_BB[pawn] & pos.color_BB[black] & bq_shield_pawn_mask)) * eval_castle_missing_shield_pawn_penalty * mg_phase / 24;
+
+    // Minor piece mobility
+    //Bitboard wpawnattacks = get_attacks(white, pawn, pos.color_BB[white] & pos.type_BB[pawn], pos.pieces());
+    //Bitboard bpawnattacks = get_attacks(black, pawn, pos.color_BB[black] & pos.type_BB[pawn], pos.pieces());
+    //Bitboard wknight = pos.color_BB[white] & pos.type_BB[knight];
+    //while (wknight) {
+    //    Square sq = pop_lsb(wknight);
+    //    eval += popcount(get_attacks(white, knight, sq, pos.pieces()) & ~bpawnattacks & ~pos.color_BB[white]) * eval_knight_mobility_bonus;
+    //}
+    //Bitboard wbishop = pos.color_BB[white] & pos.type_BB[bishop];
+    //while (wbishop) {
+    //    Square sq = pop_lsb(wbishop);
+    //    eval += popcount(get_attacks(white, bishop, sq, pos.pieces()) & ~bpawnattacks & ~pos.color_BB[white]) * eval_bishop_mobility_bonus;
+    //}
+    //Bitboard bknight = pos.color_BB[black] & pos.type_BB[knight];
+    //while (bknight) {
+    //    Square sq = pop_lsb(bknight);
+    //    eval -= popcount(get_attacks(black, knight, sq, pos.pieces()) & ~wpawnattacks & ~pos.color_BB[black]) * eval_knight_mobility_bonus;
+    //}
+    //Bitboard bbishop = pos.color_BB[black] & pos.type_BB[bishop];
+    //while (bbishop) {
+    //    Square sq = pop_lsb(bbishop);
+    //    eval -= popcount(get_attacks(black, bishop, sq, pos.pieces()) & ~wpawnattacks & ~pos.color_BB[black]) * eval_bishop_mobility_bonus;
+    //}
 
     int color_mult = pos.white_to_move ? 1 : -1;
     return color_mult * eval;

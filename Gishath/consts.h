@@ -25,3 +25,5 @@ constexpr int transposition_table_age_cutoff = 1; // Number of moves until an en
 constexpr int eval_bishop_pair = 40;
 constexpr int eval_doubled_pawn_penalty = 20;
 constexpr int eval_castle_missing_shield_pawn_penalty = 10;
+//constexpr int eval_knight_mobility_bonus = 3;
+//constexpr int eval_bishop_mobility_bonus = 2;
