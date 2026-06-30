@@ -20,3 +20,8 @@ constexpr int killers_per_ply = 2;
 constexpr int transposition_table_size = 8388608; // Make this an option in command line later
 constexpr int transposition_table_bucket_size = 4; // Number of buckets per index in transposition table
 constexpr int transposition_table_age_cutoff = 1; // Number of moves until an entry is always replaced
+
+// Eval (material and piece square stored in eval.h)
+constexpr int eval_bishop_pair = 40;
+constexpr int eval_doubled_pawn_penalty = 20;
+constexpr int eval_castle_missing_shield_pawn_penalty = 10;
