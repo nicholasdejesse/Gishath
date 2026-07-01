@@ -4,8 +4,8 @@
 #include "consts.h"
 #include "bitboard.h"
 
-constexpr Bitboard wk_shield_pawn_mask = (Bitboard(7) << 8);// | (Bitboard(7) << 16);
-constexpr Bitboard wq_shield_pawn_mask = (Bitboard(7) << 13);// | (Bitboard(7) << 21);
+constexpr Bitboard wk_shield_pawn_mask = (Bitboard(7) << 13);// | (Bitboard(7) << 16);
+constexpr Bitboard wq_shield_pawn_mask = (Bitboard(7) << 8);// | (Bitboard(7) << 21);
 constexpr Bitboard bk_shield_pawn_mask = relative_bb(black, wk_shield_pawn_mask);
 constexpr Bitboard bq_shield_pawn_mask = relative_bb(black, wq_shield_pawn_mask);
 constexpr Bitboard wk_castle_squares = Bitboard(3) << 6;
@@ -43,8 +43,8 @@ int evaluate_position(Position& pos) {
     int eval = (mg_score * mg_phase + eg_score * eg_phase) / 24;
 
     // Bishop pair
-    if (popcount(pos.type_BB[bishop] & pos.color_BB[white]) >= 2) eval += eval_bishop_pair;
-    if (popcount(pos.type_BB[bishop] & pos.color_BB[black]) >= 2) eval -= eval_bishop_pair;
+    //if (popcount(pos.type_BB[bishop] & pos.color_BB[white]) >= 2) eval += eval_bishop_pair;
+    //if (popcount(pos.type_BB[bishop] & pos.color_BB[black]) >= 2) eval -= eval_bishop_pair;
 
     // Doubled pawns
     Bitboard doubled_white = pos.type_BB[pawn] & pos.color_BB[white];
