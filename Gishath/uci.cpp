@@ -81,6 +81,14 @@ void UCIEngine::loop() {
 
 void UCIEngine::new_game() {
     transposition_table = TranspositionTable();
+    for (auto& row : killers) {
+        row.fill(Move(0));
+    }
+    for (auto& color_row : history_table) {
+        for (auto& from_row : color_row) {
+            from_row.fill(0);
+        }
+    }
 }
 // Called when "position ..." is passed in, does not reset anything related to current game (i.e. transposition table)
 void UCIEngine::reset_position() {

@@ -6,8 +6,8 @@ GameHistory::GameHistory() {
 }
 
 void GameHistory::push(Bitboard zobrist, bool reversible) {
-    hashes.push_back(zobrist);
-    is_reversible.push_back(reversible);
+    hashes.emplace_back(zobrist);
+    is_reversible.emplace_back(reversible);
 }
 
 void GameHistory::pop() {

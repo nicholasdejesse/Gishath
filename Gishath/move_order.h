@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include "uci.h"
 #include "move_gen.h"
 #include "transposition_table.h"
 
@@ -9,9 +10,9 @@ private:
     std::array<int, move_list_size> scores;
     Position pos;
     int idx_sorted;
-    int score_move(Move m, Position& pos, TranspositionTable& transposition_table, std::array<std::array<Move, killers_per_ply>, max_ply>& killers, int ply);
+    int score_move(Move m, Position& pos, int ply, UCIEngine& uci);
 
 public:
-    MoveOrder(MoveList& ml, Position& pos, TranspositionTable& transposition_table, std::array<std::array<Move, killers_per_ply>, max_ply>& killers, int ply);
+    MoveOrder(MoveList& ml, Position& pos, int ply, UCIEngine& uci);
     Move get_next_move();
 };

@@ -62,6 +62,23 @@ int evaluate_position(Position& pos) {
     if (bk & wk_castle_squares) eval += std::max(0, 2 - popcount(pos.type_BB[pawn] & pos.color_BB[black] & bk_shield_pawn_mask)) * eval_castle_missing_shield_pawn_penalty * mg_phase / 24;
     else if (bk & wq_castle_squares) eval += std::max(0, 2 - popcount(pos.type_BB[pawn] & pos.color_BB[black] & bq_shield_pawn_mask)) * eval_castle_missing_shield_pawn_penalty * mg_phase / 24;
 
+    // Rook on open/semi-open file
+    Bitboard white_rooks = pos.type_BB[rook] & pos.color_BB[white];
+    while (white_rooks) {
+        Square sq = pop_lsb(white_rooks);
+        Bitboard file_mask = file_bb_of(sq);
+        if ((file_mask & pos.type_BB[pawn]) == 0) eval += eval_rook_open_file_bonus; // No pawns
+        else if ((file_mask & pos.type_BB[pawn] & pos.color_BB[white]) == 0) eval += eval_rook_semi_open_file_bonus; // No friendly pawns
+    }
+    Bitboard black_rooks = pos.type_BB[rook] & pos.color_BB[black];
+    while (black_rooks) {
+        Square sq = pop_lsb(black_rooks);
+        Bitboard file_mask = file_bb_of(sq);
+        if ((file_mask & pos.type_BB[pawn]) == 0) eval -= eval_rook_open_file_bonus;
+        else if ((file_mask & pos.type_BB[pawn] & pos.color_BB[black]) == 0) eval -= eval_rook_semi_open_file_bonus;
+    }
+
+
     // Minor piece mobility
     //Bitboard wpawnattacks = get_attacks(white, pawn, pos.color_BB[white] & pos.type_BB[pawn], pos.pieces());
     //Bitboard bpawnattacks = get_attacks(black, pawn, pos.color_BB[black] & pos.type_BB[pawn], pos.pieces());

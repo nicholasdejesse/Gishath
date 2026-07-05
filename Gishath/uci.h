@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -19,9 +20,11 @@ private:
 
 public:
     TranspositionTable transposition_table;
+    std::array<std::array<Move, killers_per_ply>, max_ply> killers;
+    std::array<std::array<std::array<int, square_num>, square_num>, color_num> history_table;
+
     void loop();
     void write_search_info(int depth, int seldepth, int score, int nodes_visited);
 
     UCIEngine();
 };
-

@@ -7,7 +7,6 @@ constexpr int hash_score = 90000;
 constexpr int captures_base_score = 50000;
 constexpr int killer_score_1 = 30000;
 constexpr int killer_score_2 = 29000;
-constexpr int quiet_base_score = 0;
 
 // Note that this includes no_piece_type, but it's faster I think
 constexpr std::array<std::array<int, piece_type_num>, piece_type_num> mvv_lva_table{ {
@@ -20,9 +19,9 @@ constexpr std::array<std::array<int, piece_type_num>, piece_type_num> mvv_lva_ta
     {0, 0, 0, 0, 0, 0, 0}, // king victim
 }};
 
-MoveOrder::MoveOrder(MoveList& ml, Position& pos, TranspositionTable& transposition_table, std::array<std::array<Move, killers_per_ply>, max_ply>& killers, int ply) : ml(ml), pos(pos), idx_sorted(0), scores{} {
+MoveOrder::MoveOrder(MoveList& ml, Position& pos, int ply, UCIEngine& uci) : ml(ml), pos(pos), idx_sorted(0), scores{} {
     for (int i = 0; i < ml.count; ++i) {
-        scores[i] = score_move(ml.moves[i], pos, transposition_table, killers, ply);
+        scores[i] = score_move(ml.moves[i], pos, ply, uci);
     }
 }
 
@@ -50,13 +49,13 @@ Move MoveOrder::get_next_move() {
     return ml.moves[idx_sorted - 1];
 }
 
-int MoveOrder::score_move(Move m, Position& pos, TranspositionTable& transposition_table, std::array<std::array<Move, killers_per_ply>, max_ply>& killers, int ply) {
+int MoveOrder::score_move(Move m, Position& pos, int ply, UCIEngine& uci) {
     Square from = m.get_from();
     Square to = m.get_to();
     PieceType pt = piecetype_of(pos.board_mailbox[from]);
     PieceType capturing = piecetype_of(pos.board_mailbox[to]);
 
-    TranspositionEntry* tt_entry = transposition_table.probe(pos.zobrist);
+    TranspositionEntry* tt_entry = uci.transposition_table.probe(pos.zobrist);
     if (tt_entry) {
         if (m == tt_entry->best_move && pos.pseudo_legal(tt_entry->best_move)) {
             return hash_score;
@@ -67,12 +66,12 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionTable& transpositi
         return captures_base_score + mvv_lva_table[capturing][pt];
     }
 
-    if (m == killers[ply][0]) {
+    if (m == uci.killers[ply][0]) {
         return killer_score_1;
     }
-    if (m == killers[ply][1]) {
+    if (m == uci.killers[ply][1]) {
         return killer_score_2;
     }
 
-    return quiet_base_score;
+    return uci.history_table[pos.side_to_move()][m.get_from()][m.get_to()];
 }
