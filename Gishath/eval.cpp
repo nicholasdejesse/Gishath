@@ -78,6 +78,21 @@ int evaluate_position(Position& pos) {
         else if ((file_mask & pos.type_BB[pawn] & pos.color_BB[black]) == 0) eval -= eval_rook_semi_open_file_bonus;
     }
 
+    // Passed pawns scaled to endgames (bonus for distance to enemy king)
+    Bitboard white_passed = pos.type_BB[pawn] & pos.color_BB[white];
+    while (white_passed) {
+        Square sq = pop_lsb(white_passed);
+        if ((passed_pawn_mask[white][sq] & pos.type_BB[pawn] & pos.color_BB[black]) == 0) {
+            eval += (eval_passed_pawn_bonus + manhattan_distance(sq, get_lsb(bk)) + relative_rank(white, rank_of(sq))) * (1- mg_phase / 24);
+        }
+    }
+    Bitboard black_passed = pos.type_BB[pawn] & pos.color_BB[black];
+    while (black_passed) {
+        Square sq = pop_lsb(black_passed);
+        if ((passed_pawn_mask[black][sq] & pos.type_BB[pawn] & pos.color_BB[white]) == 0) {
+            eval -= (eval_passed_pawn_bonus + manhattan_distance(sq, get_lsb(wk)) + relative_rank(black, rank_of(sq))) * (1 - mg_phase / 24);
+        }
+    }
 
     // Minor piece mobility
     //Bitboard wpawnattacks = get_attacks(white, pawn, pos.color_BB[white] & pos.type_BB[pawn], pos.pieces());

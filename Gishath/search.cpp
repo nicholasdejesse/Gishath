@@ -178,9 +178,9 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 
     // Reverse futility pruning
     int eval = evaluate_position(pos);
-    int margin = reverse_futility_pruning_factor * depth;
+    int rfp_margin = reverse_futility_pruning_factor * depth;
     // Not in check, not PV node, not checkmate
-    if (!is_checked && beta - alpha <= 1 && eval >= beta + margin && std::abs(beta) < checkmate_score - max_ply) {
+    if (!is_checked && beta - alpha <= 1 && eval >= beta + rfp_margin && std::abs(beta) < checkmate_score - max_ply) {
         return eval;
     }
 
@@ -197,11 +197,24 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 
     for (int i = 0; i < ml.count; ++i) {
         Move m = order.get_next_move();
+        bool is_capture = pos.is_capture(m);
         pos.make_move(m);
         if (!pos.legal()) {
             pos.unmake_move(m);
             continue;
         }
+
+        // Futility pruning
+        //if (depth == 1) {
+        //    eval = evaluate_position(pos);
+        //    int fp_margin = reverse_futility_pruning_factor * depth;
+        //    // Not capture, not checking, not PV node, not checkmate
+        //    if (!is_capture && !pos.is_checked(Color(1-us)) && beta - alpha <= 1 && eval + fp_margin < alpha && std::abs(beta) < checkmate_score - max_ply) {
+        //        pos.unmake_move(m);
+        //        continue;
+        //    }
+        //}
+
         found_legal = true;
         int score;
         if (i == 0) {

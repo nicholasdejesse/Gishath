@@ -195,5 +195,24 @@ constexpr auto eg_table = []() constexpr {
     return table;
 }();
 
+constexpr auto passed_pawn_mask = []() constexpr {
+    std::array<std::array<Bitboard, square_num>, color_num> table{};
+    for (Square sq = a1; sq < square_num; sq = Square(sq + 1)) {
+        Bitboard files = file_bb_of(sq);
+        files |= shift_BB(files, east);
+        files |= shift_BB(files, west);
+        for (Color c : {white, black}) {
+            Bitboard c_files = files;
+            Bitboard rank = rank_bb_of(sq);
+            while (rank) {
+                c_files &= ~rank;
+                rank = shift_BB(rank, relative_direction(c, south));
+            }
+            table[c][sq] = c_files;
+        }
+    }
+    return table;
+    }();
+
 
 int evaluate_position(Position& pos);
