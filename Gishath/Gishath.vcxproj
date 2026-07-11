@@ -152,6 +152,7 @@
     <ClCompile Include="position.cpp" />
     <ClCompile Include="search.cpp" />
     <ClCompile Include="transposition_table.cpp" />
+    <ClCompile Include="pv_table.cpp" />
     <ClCompile Include="uci.cpp" />
     <ClCompile Include="zobrist.cpp" />
   </ItemGroup>
@@ -168,6 +169,7 @@
     <ClInclude Include="position.h" />
     <ClInclude Include="search.h" />
     <ClInclude Include="transposition_table.h" />
+    <ClInclude Include="pv_table.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="bitboard.h" />
     <ClInclude Include="uci.h" />

@@ -60,6 +60,9 @@
     <ClCompile Include="transposition_table.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="pv_table.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="position.h">
@@ -108,6 +111,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="transposition_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pv_table.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

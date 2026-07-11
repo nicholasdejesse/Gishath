@@ -130,6 +130,7 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
 
 int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci) {
     ++nodes_visited;
+    uci.pv_table.pv_length[ply] = 0;
 
     // Call every so often since it is expensive
     if (nodes_visited % out_of_time_check_freq == 0) {
@@ -168,7 +169,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
     // Don't allow when in check or side to move is only king and pawns (zugzwang)
     if (depth >= null_move_reduction && !pos.is_checked(us) && (pos.color_BB[us] & ~pos.type_BB[pawn] & ~pos.type_BB[king])) {
         pos.make_nullmove();
-        int null_score = -1 * pvs_recursive(pos, depth - null_move_reduction, ply + 1, -beta, -beta + 1, uci);
+        int null_score = -1 * pvs_recursive(pos, depth - 1 - null_move_reduction, ply + 1 + null_move_reduction, -beta, -beta + 1, uci);
         pos.unmake_nullmove();
         if (null_score >= beta) {
             uci.transposition_table.insert(pos.zobrist, Move(0), adjust_score_for_tt(null_score, ply), depth, TranspositionFlag::lower_bound, age);
@@ -218,11 +219,11 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
         found_legal = true;
         int score;
         if (i == 0) {
-            score = -1 * pvs_recursive(pos, depth - 1, 1, -beta, -alpha, uci);
+            score = -1 * pvs_recursive(pos, depth - 1, ply + 1, -beta, -alpha, uci);
         }
         else {
             if (depth > lmr_min_depth && !pos.is_checked(pos.side_to_move()) && !pos.is_capture(m)) {
-                score = -1 * pvs_recursive(pos, depth - 1 - get_lmr_reduction(depth, i), ply + 1, -alpha - 1, -alpha, uci);
+                score = -1 * pvs_recursive(pos, depth - 1 - get_lmr_reduction(depth, i), ply + 1 + get_lmr_reduction(depth, i), -alpha - 1, -alpha, uci);
                 if (score > alpha)
                     score = -1 * pvs_recursive(pos, depth - 1, ply + 1, -alpha - 1, -alpha, uci);
             }
@@ -238,6 +239,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
             if (score > alpha) {
                 flag = TranspositionFlag::exact;
                 alpha = score;
+                uci.pv_table.set_pv(m, ply);
             }
         }
         pos.unmake_move(m);
@@ -275,6 +277,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci) {
     MoveList ml = generate(pos);
     MoveOrder order = MoveOrder(ml, pos, 0, uci);
+    uci.pv_table.pv_length[0] = 0;
 
     assert(ml.count > 0);
 
@@ -314,6 +317,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci) {
             if (score > alpha) {
                 flag = TranspositionFlag::exact;
                 alpha = score;
+                uci.pv_table.set_pv(m, 0);
             }
         }
         pos.unmake_move(m);
@@ -324,7 +328,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci) {
     return std::make_pair(best_move, max);
 }
 
-Move find_best_move(Position& pos, int ms_to_search, UCIEngine& uci, int max_depth = 9999) {
+Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, int max_depth = 9999) {
     // Prevent age increase from searching same position twice
     // (Won't happen in engine play but maybe analysis idk)
     if (pos.zobrist != prev_zobrist) {

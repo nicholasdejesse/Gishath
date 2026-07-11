@@ -58,15 +58,18 @@ void UCIEngine::loop() {
                 if (input_size >= 3 && input[1] == "depth") {
                     max_depth = std::stoi(input[2]);
                 }
-                int wtime = 5000 * 20;
-                int btime = 5000 * 20;
+                unsigned long wtime = 5000 * 20;
+                unsigned long btime = 5000 * 20;
+                if (input_size > 1 && input[1] == "infinite") {
+                    wtime = std::numeric_limits<unsigned long>::max();
+                    btime = std::numeric_limits<unsigned long>::max();
+                }
                 // This logic is a bit frail, should switch later
                 if (input_size >= 5 && input[1] == "wtime" && input[3] == "btime") {
-                    wtime = std::stoi(input[2]);
-                    btime = std::stoi(input[4]);
-                    std::cout << wtime << " " << btime;
+                    wtime = std::stoul(input[2]);
+                    btime = std::stoul(input[4]);
                 }
-                int ms_to_search = get_time_for_move(wtime, btime);
+                unsigned long ms_to_search = get_time_for_move(wtime, btime);
                 Move best_move = find_best_move(pos, ms_to_search, *this, max_depth);
                 std::cout << "bestmove " << best_move.to_string() << std::endl;
                 //std::cout << "Transposition table capacity: " << transposition_table.capacity << "/" << transposition_table_size << std::endl;
@@ -89,6 +92,7 @@ void UCIEngine::new_game() {
             from_row.fill(0);
         }
     }
+    pv_table.clear_all();
 }
 // Called when "position ..." is passed in, does not reset anything related to current game (i.e. transposition table)
 void UCIEngine::reset_position() {
@@ -97,15 +101,20 @@ void UCIEngine::reset_position() {
 
 void UCIEngine::write_search_info(int depth, int seldepth, int score, int nodes_visited) {
     if (depth == seldepth)
-        std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes_visited << std::endl;
+        std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes_visited;
     else
-        std::cout << "info depth " << depth << " seldepth " << seldepth << " score cp " << score << " nodes " << nodes_visited << std::endl;
+        std::cout << "info depth " << depth << " seldepth " << seldepth << " score cp " << score << " nodes " << nodes_visited;
+    std::cout << " pv";
+    for (int i = 0; i < pv_table.length(0); ++i) {
+        std::cout << ' ' << pv_table.line(0)[i].to_string();
+    }
+    std::cout << std::endl;
 }
 
-int UCIEngine::get_time_for_move(int wtime, int btime) {
+unsigned long UCIEngine::get_time_for_move(unsigned long wtime, unsigned long btime) {
     // Just divide remaining time by 20
-    int our_time = pos.side_to_move() == white ? wtime : btime;
-    int time_allotted = our_time / 20;
+    unsigned long our_time = pos.side_to_move() == white ? wtime : btime;
+    unsigned long time_allotted = our_time / 20;
     if (time_allotted > 0) {
         return time_allotted;
     }

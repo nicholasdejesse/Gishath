@@ -11,7 +11,7 @@ constexpr int negative_inf = std::numeric_limits<int>::min() / 2;
 constexpr int positive_inf = std::numeric_limits<int>::max() / 2;
 
 // Search
-constexpr int null_move_reduction = 3;
+constexpr int null_move_reduction = 2;
 constexpr int out_of_time_check_freq = 2048; // How many nodes to visit before rechecking if we are out of time
 constexpr int reverse_futility_pruning_factor = 150;
 constexpr int futility_pruning_factor = 250;

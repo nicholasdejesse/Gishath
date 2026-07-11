@@ -24,14 +24,14 @@ public:
     void set_to(Square to);
     void set_from(Square from);
 
-    MoveType type_of();
-    PieceType get_promotion_piece_type();
+    MoveType type_of() const;
+    PieceType get_promotion_piece_type() const;
     bool is_null();
         
     void operator=(Move a);
     bool operator==(Move a) const;
     bool operator!=(Move a) const;
-    std::string to_string();
+    std::string to_string() const;
 
 private:
     uint16_t m_Move;

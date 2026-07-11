@@ -50,11 +50,11 @@ Square Move::get_to() const {
 void Move::set_to(Square to) { m_Move &= ~0x3f; m_Move |= to & 0x3f; }
 void Move::set_from(Square from) { m_Move &= ~0xfc0; m_Move |= (from & 0x3f) << 6; }
 
-MoveType Move::type_of() {
+MoveType Move::type_of() const {
     return MoveType(m_Move & (3 << 14));
 }
 
-PieceType Move::get_promotion_piece_type() {
+PieceType Move::get_promotion_piece_type() const {
     return PieceType(((m_Move >> 12) & 3) + knight); // 0 should be knight, so we add knight
 }
 
@@ -66,7 +66,7 @@ bool Move::operator==(Move a) const { return (m_Move & 0xffff) == (a.m_Move & 0x
 
 bool Move::operator!=(Move a) const { return (m_Move & 0xffff) != (a.m_Move & 0xffff); }
 
-std::string Move::to_string() {
+std::string Move::to_string() const {
     std::string files = "abcdefgh";
     std::string ranks = "12345678";
     std::string res{ files[file_of(get_from())], ranks[rank_of(get_from())], files[file_of(get_to())], ranks[rank_of(get_to())] };
