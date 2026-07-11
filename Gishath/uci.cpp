@@ -54,6 +54,7 @@ void UCIEngine::loop() {
                 run_perft(pos, depth);
             }
             else {
+                stop_search.store(false);
                 int max_depth = 9999;
                 if (input_size >= 3 && input[1] == "depth") {
                     max_depth = std::stoi(input[2]);
@@ -70,10 +71,20 @@ void UCIEngine::loop() {
                     btime = std::stoul(input[4]);
                 }
                 unsigned long ms_to_search = get_time_for_move(wtime, btime);
-                Move best_move = find_best_move(pos, ms_to_search, *this, max_depth);
-                std::cout << "bestmove " << best_move.to_string() << std::endl;
+                search_thread = std::thread([&] {
+                    Move best_move = find_best_move(pos, ms_to_search, *this, max_depth);
+
+                    if (!stop_search.load())
+                        std::cout << "bestmove " << best_move.to_string() << std::endl;
+                });
                 //std::cout << "Transposition table capacity: " << transposition_table.capacity << "/" << transposition_table_size << std::endl;
                 //std::cout << "Transposition table collisions: " << transposition_table.collisions << std::endl;
+            }
+        }
+        else if (input[0] == "stop") {
+            stop_search.store(true);
+            if (search_thread.joinable()) {
+                search_thread.join();
             }
         }
         else if (input[0] == "quit") {

@@ -135,6 +135,9 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
     // Call every so often since it is expensive
     if (nodes_visited % out_of_time_check_freq == 0) {
         check_out_of_time();
+        if (uci.stop_search.load()) {
+            out_of_time = true;
+        }
     }
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
@@ -331,6 +334,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci) {
 Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, int max_depth = 9999) {
     // Prevent age increase from searching same position twice
     // (Won't happen in engine play but maybe analysis idk)
+    uci.pv_table.clear_all();
     if (pos.zobrist != prev_zobrist) {
         ++age;
         prev_zobrist = pos.zobrist;
