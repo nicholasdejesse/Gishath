@@ -49,6 +49,9 @@ void UCIEngine::loop() {
             }
         }
         else if (input[0] == "go") {
+            if (search_thread.joinable()) {
+                search_thread.join();
+            }
             if (input_size > 1 && input[1] == "perft") {
                 int depth = std::stoi(input[2]);
                 run_perft(pos, depth);
@@ -65,14 +68,16 @@ void UCIEngine::loop() {
                     wtime = std::numeric_limits<unsigned long>::max();
                     btime = std::numeric_limits<unsigned long>::max();
                 }
-                // This logic is a bit frail, should switch later
+                // This logic is a fragile, should switch later
                 if (input_size >= 5 && input[1] == "wtime" && input[3] == "btime") {
                     wtime = std::stoul(input[2]);
                     btime = std::stoul(input[4]);
                 }
                 unsigned long ms_to_search = get_time_for_move(wtime, btime);
-                search_thread = std::thread([&] {
-                    Move best_move = find_best_move(pos, ms_to_search, *this, max_depth);
+                Position search_pos = pos;
+
+                search_thread = std::thread([this, search_pos, ms_to_search, max_depth]() mutable {
+                    Move best_move = find_best_move(search_pos, ms_to_search, *this, max_depth);
 
                     if (!stop_search.load())
                         std::cout << "bestmove " << best_move.to_string() << std::endl;
@@ -88,6 +93,10 @@ void UCIEngine::loop() {
             }
         }
         else if (input[0] == "quit") {
+            stop_search.store(true);
+            if (search_thread.joinable()) {
+                search_thread.join();
+            }
             break;
         }
     }

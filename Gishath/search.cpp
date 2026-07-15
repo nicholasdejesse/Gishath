@@ -172,7 +172,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
     // Don't allow when in check or side to move is only king and pawns (zugzwang)
     if (depth >= null_move_reduction && !pos.is_checked(us) && (pos.color_BB[us] & ~pos.type_BB[pawn] & ~pos.type_BB[king])) {
         pos.make_nullmove();
-        int null_score = -1 * pvs_recursive(pos, depth - 1 - null_move_reduction, ply + 1 + null_move_reduction, -beta, -beta + 1, uci);
+        int null_score = -1 * pvs_recursive(pos, depth - 1 - null_move_reduction, ply + 1, -beta, -beta + 1, uci);
         pos.unmake_nullmove();
         if (null_score >= beta) {
             uci.transposition_table.insert(pos.zobrist, Move(0), adjust_score_for_tt(null_score, ply), depth, TranspositionFlag::lower_bound, age);
@@ -192,6 +192,8 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
     MoveOrder order = MoveOrder(ml, pos, ply, uci);
 
     bool found_legal = false;
+    bool found_nonfutile = false;
+
     int max = negative_inf;
     Move best_move = Move();
     TranspositionFlag flag = TranspositionFlag::upper_bound;
@@ -208,33 +210,47 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
             continue;
         }
 
-        // Futility pruning
-        //if (depth == 1) {
-        //    eval = evaluate_position(pos);
-        //    int fp_margin = reverse_futility_pruning_factor * depth;
-        //    // Not capture, not checking, not PV node, not checkmate
-        //    if (!is_capture && !pos.is_checked(Color(1-us)) && beta - alpha <= 1 && eval + fp_margin < alpha && std::abs(beta) < checkmate_score - max_ply) {
-        //        pos.unmake_move(m);
-        //        continue;
-        //    }
-        //}
-
         found_legal = true;
+        int iter_depth = depth;
+
+        // Futility pruning
+        if (depth <= max_futility_pruning_depth) {
+            // Not capture, not checking, not PV node, not checkmate
+            int futility = futility_pruning_factors[depth - 1]; // Subtract one because depth 1 corresponds to index 0 in array
+            if (!is_capture &&
+                !pos.is_checked(pos.side_to_move()) &&
+                beta - alpha <= 1 &&
+                eval + futility <= alpha &&
+                alpha > -checkmate_score + max_ply &&
+                beta < checkmate_score - max_ply)
+            {
+                if (depth == max_futility_pruning_depth) {
+                    // Reduced depth search
+                    --iter_depth;
+                }
+                else {
+                    pos.unmake_move(m);
+                    continue;
+                }
+            }
+        }
+
+        found_nonfutile = true;
         int score;
         if (i == 0) {
-            score = -1 * pvs_recursive(pos, depth - 1, ply + 1, -beta, -alpha, uci);
+            score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -beta, -alpha, uci);
         }
         else {
-            if (depth > lmr_min_depth && !pos.is_checked(pos.side_to_move()) && !pos.is_capture(m)) {
-                score = -1 * pvs_recursive(pos, depth - 1 - get_lmr_reduction(depth, i), ply + 1 + get_lmr_reduction(depth, i), -alpha - 1, -alpha, uci);
+            if (iter_depth > lmr_min_depth && !pos.is_checked(pos.side_to_move()) && !pos.is_capture(m)) {
+                score = -1 * pvs_recursive(pos, iter_depth - 1 - get_lmr_reduction(iter_depth, i), ply + 1, -alpha - 1, -alpha, uci);
                 if (score > alpha)
-                    score = -1 * pvs_recursive(pos, depth - 1, ply + 1, -alpha - 1, -alpha, uci);
+                    score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci);
             }
             else {
-                score = -1 * pvs_recursive(pos, depth - 1, ply + 1, -alpha - 1, -alpha, uci);
+                score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci);
             }
             if (score > alpha && beta - alpha > 1)
-                score = -1 * pvs_recursive(pos, depth - 1, ply + 1, -beta, -alpha, uci);
+                score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -beta, -alpha, uci);
         }
         if (score > max) {
             max = score;
@@ -247,10 +263,10 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
         }
         pos.unmake_move(m);
         if (score >= beta) {
-            uci.transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), depth, TranspositionFlag::lower_bound, age);
+            uci.transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), iter_depth, TranspositionFlag::lower_bound, age);
             insert_killer(uci.killers, pos, m, ply);
             if (!pos.is_capture(m)) {
-                int update_val = depth * depth;
+                int update_val = iter_depth * iter_depth;
                 update_history(uci.history_table, m.get_from(), m.get_to(), us, update_val);
                 for (int j = 0; j < quiet_count; ++j) {
                     // Apply malus to other quiets that did not cause cutoff
@@ -270,6 +286,9 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
         else {
             return draw_score;
         }
+    }
+    else if (!found_nonfutile) {
+        return eval;
     }
 
     uci.transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), depth, flag, age);
@@ -291,6 +310,8 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci) {
     TranspositionFlag flag = TranspositionFlag::upper_bound;
     
     for (int i = 0; i < ml.count; ++i) {
+        if (out_of_time)
+            return std::make_pair(Move(0), draw_score);
         Move m = order.get_next_move();
         //Move m = ml.moves[i];
         pos.make_move(m);
@@ -314,6 +335,13 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci) {
             if (score > alpha && beta - alpha > 1)
                 score = -1 * pvs_recursive(pos, depth - 1, 1, -beta, -alpha, uci);
         }
+        if (nodes_visited % out_of_time_check_freq == 0) {
+            check_out_of_time();
+            if (uci.stop_search.load()) {
+                out_of_time = true;
+            }
+        }
+
         if (score > max) {
             max = score;
             best_move = m;
@@ -325,6 +353,8 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci) {
         }
         pos.unmake_move(m);
     }
+    if (out_of_time)
+        return std::make_pair(Move(0), draw_score);
 
     uci.transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, 0), depth, flag, age);
 
@@ -349,7 +379,7 @@ Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, i
     }
 
     int depth = 1;
-    Move best_move;
+    Move best_move = Move(0);
     int best_score = negative_inf;
     while (!out_of_time && depth <= max_depth) {
         std::pair<Move, int> curr = pvs(pos, depth, uci);
