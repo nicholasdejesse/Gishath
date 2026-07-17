@@ -14,6 +14,7 @@ void UCIEngine::loop() {
         if (input[0] == "uci") {
             std::cout << "id name Gishath" << std::endl;
             std::cout << "id author Nicholas DeJesse" << std::endl;
+            std::cout << "option name Hash type spin default " << uci_hash_default_size << " min " << uci_hash_min_size << " max " << uci_hash_max_size << std::endl;
             std::cout << "uciok" << std::endl;
         }
         else if (input[0] == "isready") {
@@ -82,14 +83,17 @@ void UCIEngine::loop() {
                     if (!stop_search.load())
                         std::cout << "bestmove " << best_move.to_string() << std::endl;
                 });
-                //std::cout << "Transposition table capacity: " << transposition_table.capacity << "/" << transposition_table_size << std::endl;
-                //std::cout << "Transposition table collisions: " << transposition_table.collisions << std::endl;
             }
         }
         else if (input[0] == "stop") {
             stop_search.store(true);
             if (search_thread.joinable()) {
                 search_thread.join();
+            }
+        }
+        else if (input[0] == "option") {
+            if (input_size >= 5 && input[2] == "Hash") {
+                hash_size = static_cast<size_t>(std::stoull(input[4]));
             }
         }
         else if (input[0] == "quit") {
@@ -103,7 +107,7 @@ void UCIEngine::loop() {
 }
 
 void UCIEngine::new_game() {
-    transposition_table = TranspositionTable();
+    transposition_table = TranspositionTable(hash_size);
     for (auto& row : killers) {
         row.fill(Move(0));
     }
@@ -141,4 +145,4 @@ unsigned long UCIEngine::get_time_for_move(unsigned long wtime, unsigned long bt
     return our_time;
 }
 
-UCIEngine::UCIEngine() : transposition_table() {}
+UCIEngine::UCIEngine() : transposition_table(uci_hash_default_size), killers{}, history_table{} {}

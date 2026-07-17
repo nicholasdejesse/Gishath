@@ -4,7 +4,7 @@
 #include <algorithm>
 
 Bitboard TranspositionTable::get_key(Bitboard zobrist) {
-    Bitboard num_buckets = transposition_table_size / transposition_table_bucket_size;
+    Bitboard num_buckets = table.size() / transposition_table_bucket_size;
     assert((num_buckets & (num_buckets - 1)) == 0); // Ensure size is power of 2
     return zobrist & (num_buckets - 1);
 }
@@ -48,5 +48,5 @@ void TranspositionTable::insert(Bitboard zobrist, Move best_move, int16_t score,
     bucket->entries[min_idx] = entry;
 }
 
-TranspositionBucket::TranspositionBucket() : entries(transposition_table_bucket_size, TranspositionEntry()) {}
-TranspositionTable::TranspositionTable() : table(transposition_table_size / transposition_table_bucket_size, TranspositionBucket()) {}
+TranspositionBucket::TranspositionBucket() : entries(transposition_table_bucket_size) {}
+TranspositionTable::TranspositionTable(size_t size_mb) : table((size_mb * 1024 * 1024 / sizeof(TranspositionEntry)) / transposition_table_bucket_size) {}

@@ -17,6 +17,7 @@ const std::string start_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk
 class UCIEngine {
 private:
     Position pos;
+    size_t hash_size = uci_hash_default_size;
 
     void new_game();
     void reset_position();

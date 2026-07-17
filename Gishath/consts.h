@@ -26,7 +26,6 @@ constexpr int iir_min_depth = 6;
 constexpr int iir_depth_reduction = 2;
 
 // Transposition table
-constexpr int transposition_table_size = 8388608; // Make this an option in command line later
 constexpr int transposition_table_bucket_size = 4; // Number of buckets per index in transposition table
 constexpr int transposition_table_age_cutoff = 1; // Number of moves until an entry is always replaced
 
@@ -39,3 +38,8 @@ constexpr int eval_rook_semi_open_file_bonus = 6;
 constexpr int eval_passed_pawn_bonus = 20;
 //constexpr int eval_knight_mobility_bonus = 3;
 //constexpr int eval_bishop_mobility_bonus = 2;
+
+// UCI options
+constexpr int uci_hash_min_size = 1;
+constexpr int uci_hash_max_size = 512;
+constexpr int uci_hash_default_size = 1;

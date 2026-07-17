@@ -4,7 +4,7 @@
 #include "types.h"
 #include "move.h"
 
-enum class TranspositionFlag {
+enum class TranspositionFlag : uint8_t {
     exact,
     upper_bound,
     lower_bound,
@@ -35,5 +35,5 @@ public:
     TranspositionEntry* probe(Bitboard zobrist);
     void insert(Bitboard zobrist, Move best_move, int16_t score, int8_t depth, TranspositionFlag flag, uint8_t age);
 
-    TranspositionTable();
+    TranspositionTable(size_t size_mb);
 };
