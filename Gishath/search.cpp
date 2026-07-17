@@ -28,7 +28,11 @@ int16_t adjust_score_for_tt(int score, int ply) {
 
 int get_lmr_reduction(int depth, int move_number) {
     // Cast is fine since this is never called during quiescence search
-    return static_cast<int>(std::min(4.0, std::round(0.3 + std::log(static_cast<unsigned int>(depth)) * std::log(static_cast<unsigned int>(move_number)) / 5)));
+    return std::min(lmr_max_reduction, static_cast<int>(std::round(0.3 + std::log(static_cast<unsigned int>(depth)) * std::log(static_cast<unsigned int>(move_number)) / 5)));
+}
+
+int get_lmp_index(int depth) {
+    return 3 + depth * depth / 2;
 }
 
 int16_t get_ply_adjusted_mate_score(int score, int ply) {
@@ -167,7 +171,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 
     Color us = pos.side_to_move();
     bool is_checked = pos.is_checked(us);
-    if (is_checked) depth += 1;
+    if (is_checked) depth += 1; // Check extension
     // Null move pruning
     // Don't allow when in check or side to move is only king and pawns (zugzwang)
     if (depth >= null_move_reduction && !pos.is_checked(us) && (pos.color_BB[us] & ~pos.type_BB[pawn] & ~pos.type_BB[king])) {
@@ -241,10 +245,22 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
             score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -beta, -alpha, uci);
         }
         else {
-            if (iter_depth > lmr_min_depth && !pos.is_checked(pos.side_to_move()) && !pos.is_capture(m)) {
-                score = -1 * pvs_recursive(pos, iter_depth - 1 - get_lmr_reduction(iter_depth, i), ply + 1, -alpha - 1, -alpha, uci);
-                if (score > alpha)
+            if (!is_checked && !pos.is_checked(pos.side_to_move()) && !pos.is_capture(m) && m.type_of() != promotion) {
+                if (iter_depth <= lmp_max_depth && i >= get_lmp_index(iter_depth)) {
+                    // Late move pruning
+                    pos.unmake_move(m);
+                    continue;
+                }
+                if (iter_depth > lmr_min_depth) {
+                    int lmr_reduction = get_lmr_reduction(iter_depth, i);
+                    score = -1 * pvs_recursive(pos, iter_depth - 1 - lmr_reduction, ply + 1, -alpha - 1, -alpha, uci);
+                    if (score > alpha) {
+                        score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci);
+                    }
+                }
+                else {
                     score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci);
+                }
             }
             else {
                 score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci);
@@ -297,15 +313,16 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 }
 
 std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci) {
+    int alpha = negative_inf;
+    int beta = positive_inf;
+    int max = negative_inf;
+
     MoveList ml = generate(pos);
     MoveOrder order = MoveOrder(ml, pos, 0, uci);
     uci.pv_table.pv_length[0] = 0;
 
     assert(ml.count > 0);
 
-    int alpha = negative_inf;
-    int beta = positive_inf;
-    int max = negative_inf;
     Move best_move;
     TranspositionFlag flag = TranspositionFlag::upper_bound;
     

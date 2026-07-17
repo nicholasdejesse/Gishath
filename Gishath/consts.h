@@ -19,7 +19,11 @@ constexpr int max_futility_pruning_depth = 3;
 constexpr std::array<int, max_futility_pruning_depth> futility_pruning_factors{ 125, 500, 900 };
 constexpr int killers_per_ply = 2;
 constexpr int lmr_min_depth = 3;
+constexpr int lmr_max_reduction = 4;
+constexpr int lmp_max_depth = 4;
 constexpr int max_history_bonus = 2048;
+constexpr int iir_min_depth = 6;
+constexpr int iir_depth_reduction = 2;
 
 // Transposition table
 constexpr int transposition_table_size = 8388608; // Make this an option in command line later
