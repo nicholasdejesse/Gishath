@@ -312,9 +312,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
     return max;
 }
 
-std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci) {
-    int alpha = negative_inf;
-    int beta = positive_inf;
+std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, int beta) {
     int max = negative_inf;
 
     MoveList ml = generate(pos);
@@ -399,7 +397,32 @@ Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, i
     Move best_move = Move(0);
     int best_score = negative_inf;
     while (!out_of_time && depth <= max_depth) {
-        std::pair<Move, int> curr = pvs(pos, depth, uci);
+        std::pair<Move, int> curr;
+        if (depth >= aspiration_min_depth) {
+            int alpha_increase = aspiration_window;
+            int beta_increase = aspiration_window;
+            bool must_research = true;
+            for (int i = 0; i < aspiration_max_tries; ++i) {
+                int alpha = best_score - alpha_increase;
+                int beta = best_score + beta_increase;
+                curr = pvs(pos, depth, uci, alpha, beta);
+                if (curr.second >= beta) {
+                    beta_increase *= 2;
+                }
+                else if (curr.second < alpha) {
+                    alpha_increase *= 2;
+                }
+                else {
+                    must_research = false;
+                    break;
+                }
+            }
+            if (must_research && !out_of_time)
+                curr = pvs(pos, depth, uci, negative_inf, positive_inf); // Full research
+        }
+        else {
+            curr = pvs(pos, depth, uci, negative_inf, positive_inf);
+        }
         if (!out_of_time) {
             best_move = curr.first;
             best_score = curr.second;

@@ -24,6 +24,9 @@ constexpr int lmp_max_depth = 4;
 constexpr int max_history_bonus = 2048;
 constexpr int iir_min_depth = 6;
 constexpr int iir_depth_reduction = 2;
+constexpr int aspiration_window = 25; // Centipawns in one direction, full window is 2 times this
+constexpr int aspiration_min_depth = 4;
+constexpr int aspiration_max_tries = 4;
 
 // Transposition table
 constexpr int transposition_table_bucket_size = 4; // Number of buckets per index in transposition table
@@ -42,4 +45,4 @@ constexpr int eval_passed_pawn_bonus = 20;
 // UCI options
 constexpr int uci_hash_min_size = 1;
 constexpr int uci_hash_max_size = 512;
-constexpr int uci_hash_default_size = 1;
+constexpr int uci_hash_default_size = 16;
