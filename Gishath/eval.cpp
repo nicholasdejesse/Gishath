@@ -3,6 +3,7 @@
 #include "eval.h"
 #include "consts.h"
 #include "bitboard.h"
+#include <cstdlib>
 
 constexpr Bitboard wk_shield_pawn_mask = (Bitboard(7) << 13);// | (Bitboard(7) << 16);
 constexpr Bitboard wq_shield_pawn_mask = (Bitboard(7) << 8);// | (Bitboard(7) << 21);
@@ -83,14 +84,14 @@ int evaluate_position(Position& pos) {
     while (white_passed) {
         Square sq = pop_lsb(white_passed);
         if ((passed_pawn_mask[white][sq] & pos.type_BB[pawn] & pos.color_BB[black]) == 0) {
-            eval += (eval_passed_pawn_bonus + manhattan_distance(sq, get_lsb(bk)) + relative_rank(white, rank_of(sq))) * (1- mg_phase / 24);
+            eval += (eval_passed_pawn_bonus + manhattan_distance(sq, get_lsb(bk)) + relative_rank(white, rank_of(sq))) * eg_phase / 24;
         }
     }
     Bitboard black_passed = pos.type_BB[pawn] & pos.color_BB[black];
     while (black_passed) {
         Square sq = pop_lsb(black_passed);
         if ((passed_pawn_mask[black][sq] & pos.type_BB[pawn] & pos.color_BB[white]) == 0) {
-            eval -= (eval_passed_pawn_bonus + manhattan_distance(sq, get_lsb(wk)) + relative_rank(black, rank_of(sq))) * (1 - mg_phase / 24);
+            eval -= (eval_passed_pawn_bonus + manhattan_distance(sq, get_lsb(wk)) + relative_rank(black, rank_of(sq))) * eg_phase / 24;
         }
     }
 
@@ -117,6 +118,20 @@ int evaluate_position(Position& pos) {
     //    Square sq = pop_lsb(bbishop);
     //    eval -= popcount(get_attacks(black, bishop, sq, pos.pieces()) & ~wpawnattacks & ~pos.color_BB[black]) * eval_bishop_mobility_bonus;
     //}
+
+    if (pos.type_BB[pawn] == 0) {
+        // Mop up (assuming there is sufficient material at this point)
+        Square wk_sq = get_lsb(wk);
+        Square bk_sq = get_lsb(bk);
+        if ((pos.color_BB[white] & ~pos.type_BB[king]) == 0) {
+            eval -= std::max(std::abs(static_cast<int>(file_of(wk_sq - 3))), std::abs(static_cast<int>(rank_of(wk_sq - 3)))) * eval_mopup_king_on_edge_bonus;
+            eval -= (14 - manhattan_distance(wk_sq, bk_sq)) * eval_mopup_dist_between_king_bonus;
+        }
+        else if ((pos.color_BB[black] & ~pos.type_BB[king]) == 0) {
+            eval += std::max(std::abs(static_cast<int>(file_of(bk_sq) - 3)), std::abs(static_cast<int>(rank_of(bk_sq) - 3))) * eval_mopup_king_on_edge_bonus;
+            eval += (14 - manhattan_distance(wk_sq, bk_sq)) * eval_mopup_dist_between_king_bonus;
+        }
+    }
 
     int color_mult = pos.white_to_move ? 1 : -1;
     return color_mult * eval;

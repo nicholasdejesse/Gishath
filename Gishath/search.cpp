@@ -28,7 +28,7 @@ int16_t adjust_score_for_tt(int score, int ply) {
 
 int get_lmr_reduction(int depth, int move_number) {
     // Cast is fine since this is never called during quiescence search
-    return std::min(lmr_max_reduction, static_cast<int>(std::round(0.3 + std::log(static_cast<unsigned int>(depth)) * std::log(static_cast<unsigned int>(move_number)) / 5)));
+    return std::min(depth - 2, static_cast<int>(std::round(0.3 + std::log(static_cast<unsigned int>(depth)) * std::log(static_cast<unsigned int>(move_number)) / 5)));
 }
 
 int get_lmp_index(int depth) {
@@ -58,7 +58,7 @@ void insert_killer(std::array<std::array<Move, killers_per_ply>, max_ply>& kille
     }
 }
 
-int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci) {
+int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci, Move prev_move) {
     ++nodes_visited;
     if (nodes_visited % out_of_time_check_freq == 0) {
         check_out_of_time();
@@ -94,7 +94,7 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
 
     bool is_check = pos.is_checked(pos.side_to_move());
     MoveList ml = is_check ? generate(pos) : generate_by_type<GenType::captures>(pos); // This needs to switch to only generate evasions
-    MoveOrder order = MoveOrder(ml, pos, ply, uci);
+    MoveOrder order = MoveOrder(ml, pos, ply, uci, true, prev_move);
 
     bool found_legal = false;
     Move best_move = Move();
@@ -107,7 +107,7 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
             continue;
         }
         found_legal = true;
-        int score = -1 * quiescence(pos, depth - 1, ply + 1, -beta, -alpha, uci);
+        int score = -1 * quiescence(pos, depth - 1, ply + 1, -beta, -alpha, uci, m);
         if (score > max) {
             max = score;
             best_move = m;
@@ -132,7 +132,7 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
 
 }
 
-int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci) {
+int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci, Move prev_move) {
     ++nodes_visited;
     uci.pv_table.pv_length[ply] = 0;
 
@@ -167,7 +167,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
         }
     }
 
-    if (depth <= 0) return quiescence(pos, depth, ply, alpha, beta, uci); // Don't flip alpha and beta because we aren't going down search tree this call
+    if (depth <= 0) return quiescence(pos, depth, ply, alpha, beta, uci, prev_move); // Don't flip alpha and beta because we aren't going down search tree this call
 
     Color us = pos.side_to_move();
     bool is_checked = pos.is_checked(us);
@@ -176,7 +176,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
     // Don't allow when in check or side to move is only king and pawns (zugzwang)
     if (depth >= null_move_reduction && !pos.is_checked(us) && (pos.color_BB[us] & ~pos.type_BB[pawn] & ~pos.type_BB[king])) {
         pos.make_nullmove();
-        int null_score = -1 * pvs_recursive(pos, depth - 1 - null_move_reduction, ply + 1, -beta, -beta + 1, uci);
+        int null_score = -1 * pvs_recursive(pos, depth - 1 - null_move_reduction, ply + 1, -beta, -beta + 1, uci, prev_move);
         pos.unmake_nullmove();
         if (null_score >= beta) {
             uci.transposition_table.insert(pos.zobrist, Move(0), adjust_score_for_tt(null_score, ply), depth, TranspositionFlag::lower_bound, age);
@@ -193,7 +193,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
     }
 
     MoveList ml = generate(pos);
-    MoveOrder order = MoveOrder(ml, pos, ply, uci);
+    MoveOrder order = MoveOrder(ml, pos, ply, uci, false, prev_move);
 
     bool found_legal = false;
     bool found_nonfutile = false;
@@ -242,7 +242,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
         found_nonfutile = true;
         int score;
         if (i == 0) {
-            score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -beta, -alpha, uci);
+            score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -beta, -alpha, uci, m);
         }
         else {
             if (!is_checked && !pos.is_checked(pos.side_to_move()) && !pos.is_capture(m) && m.type_of() != promotion) {
@@ -253,20 +253,20 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
                 }
                 if (iter_depth > lmr_min_depth) {
                     int lmr_reduction = get_lmr_reduction(iter_depth, i);
-                    score = -1 * pvs_recursive(pos, iter_depth - 1 - lmr_reduction, ply + 1, -alpha - 1, -alpha, uci);
+                    score = -1 * pvs_recursive(pos, iter_depth - 1 - lmr_reduction, ply + 1, -alpha - 1, -alpha, uci, m);
                     if (score > alpha) {
-                        score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci);
+                        score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci, m);
                     }
                 }
                 else {
-                    score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci);
+                    score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci, m);
                 }
             }
             else {
-                score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci);
+                score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci, m);
             }
             if (score > alpha && beta - alpha > 1)
-                score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -beta, -alpha, uci);
+                score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -beta, -alpha, uci, m);
         }
         if (score > max) {
             max = score;
@@ -282,8 +282,11 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
             uci.transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), iter_depth, TranspositionFlag::lower_bound, age);
             insert_killer(uci.killers, pos, m, ply);
             if (!pos.is_capture(m)) {
+                Square from = m.get_from();
+                Square to = m.get_to();
+                uci.countermove_table [prev_move.get_from()][prev_move.get_to()] = m;
                 int update_val = iter_depth * iter_depth;
-                update_history(uci.history_table, m.get_from(), m.get_to(), us, update_val);
+                update_history(uci.history_table, from, to, us, update_val);
                 for (int j = 0; j < quiet_count; ++j) {
                     // Apply malus to other quiets that did not cause cutoff
                     update_history(uci.history_table, quiets[j].get_from(), quiets[j].get_to(), us, -update_val);
@@ -316,7 +319,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
     int max = negative_inf;
 
     MoveList ml = generate(pos);
-    MoveOrder order = MoveOrder(ml, pos, 0, uci);
+    MoveOrder order = MoveOrder(ml, pos, 0, uci, false, Move(0));
     uci.pv_table.pv_length[0] = 0;
 
     assert(ml.count > 0);
@@ -336,19 +339,19 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
         }
         int score;
         if (i == 0) {
-            score = -1 * pvs_recursive(pos, depth - 1, 1,  -beta, -alpha, uci);
+            score = -1 * pvs_recursive(pos, depth - 1, 1,  -beta, -alpha, uci, Move(0));
         }
         else {
             if (depth > lmr_min_depth && !pos.is_checked(pos.side_to_move()) && !pos.is_capture(m) && m.type_of() != promotion) {
-                score = -1 * pvs_recursive(pos, depth - 1 - get_lmr_reduction(depth, i), 1, -alpha - 1, -alpha, uci);
+                score = -1 * pvs_recursive(pos, depth - 1 - get_lmr_reduction(depth, i), 1, -alpha - 1, -alpha, uci, Move(0));
                 if (score > alpha)
-                    score = -1 * pvs_recursive(pos, depth - 1, 1, -alpha - 1, -alpha, uci);
+                    score = -1 * pvs_recursive(pos, depth - 1, 1, -alpha - 1, -alpha, uci, Move(0));
             }
             else {
-                score = -1 * pvs_recursive(pos, depth - 1, 1, -alpha - 1, -alpha, uci);
+                score = -1 * pvs_recursive(pos, depth - 1, 1, -alpha - 1, -alpha, uci, Move(0));
             }
             if (score > alpha && beta - alpha > 1)
-                score = -1 * pvs_recursive(pos, depth - 1, 1, -beta, -alpha, uci);
+                score = -1 * pvs_recursive(pos, depth - 1, 1, -beta, -alpha, uci, Move(0));
         }
         if (nodes_visited % out_of_time_check_freq == 0) {
             check_out_of_time();

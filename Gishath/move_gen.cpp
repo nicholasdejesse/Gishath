@@ -15,13 +15,15 @@ void put_pawn_moves(MoveList& ml, Bitboard to, int8_t offset) {
     }
 }
 
-void put_promotion(MoveList& ml, Bitboard to, int8_t offset) {
+void put_promotion(MoveList& ml, Bitboard to, int8_t offset, bool queen_only) {
     while (to) {
         Square sq = pop_lsb(to);
         ml.push(Move(sq - offset, sq, promotion, queen));
-        ml.push(Move(sq - offset, sq, promotion, rook));
-        ml.push(Move(sq - offset, sq, promotion, bishop));
-        ml.push(Move(sq - offset, sq, promotion, knight));
+        if (!queen_only) {
+            ml.push(Move(sq - offset, sq, promotion, rook));
+            ml.push(Move(sq - offset, sq, promotion, bishop));
+            ml.push(Move(sq - offset, sq, promotion, knight));
+        }
     }
 }
 
@@ -32,7 +34,7 @@ void put_moves(MoveList& ml, Square from, Bitboard to) {
     }
 }
 
-void generate_pawn_moves(Position& pos, MoveList& ml, Color us, Bitboard mask) {
+void generate_pawn_moves(Position& pos, MoveList& ml, Color us, Bitboard mask, bool force_include_promotions) {
     Color them = Color(1 - us);
     Bitboard pawns = pos.type_BB[pawn] & pos.color_BB[us];
     Bitboard empty_squares = ~pos.pieces();
@@ -56,13 +58,25 @@ void generate_pawn_moves(Position& pos, MoveList& ml, Color us, Bitboard mask) {
     put_pawn_moves(ml, non_promo_captures_right, up_right);
 
     if (promo_pawns) {
-        Bitboard promo_push = shift_BB(promo_pawns, up) & empty_squares & mask;
-        Bitboard promo_capture_left = shift_BB(promo_pawns, up_left) & enemies & mask;
-        Bitboard promo_capture_right = shift_BB(promo_pawns, up_right) & enemies & mask;
+        Bitboard promo_push, promo_capture_left, promo_capture_right;
+        if (force_include_promotions) {
+            // No mask
+            promo_push = shift_BB(promo_pawns, up) & empty_squares;
+            promo_capture_left = shift_BB(promo_pawns, up_left) & enemies;
+            promo_capture_right = shift_BB(promo_pawns, up_right) & enemies;
+            put_promotion(ml, promo_push, up, true);
+            put_promotion(ml, promo_capture_left, up_left, true);
+            put_promotion(ml, promo_capture_right, up_right, true);
+        }
+        else {
+            promo_push = shift_BB(promo_pawns, up) & empty_squares & mask;
+            promo_capture_left = shift_BB(promo_pawns, up_left) & enemies & mask;
+            promo_capture_right = shift_BB(promo_pawns, up_right) & enemies & mask;
+            put_promotion(ml, promo_push, up, false);
+            put_promotion(ml, promo_capture_left, up_left, false);
+            put_promotion(ml, promo_capture_right, up_right, false);
 
-        put_promotion(ml, promo_push, up);
-        put_promotion(ml, promo_capture_left, up_left);
-        put_promotion(ml, promo_capture_right, up_right);
+        }
     }
 
     if (pos.en_passant_file != -1) {
@@ -127,7 +141,7 @@ MoveList generate(Position& pos) {
     for (PieceType pt : {queen, rook, bishop, knight}) {
         generate_moves<GenType::all>(pos, ml, us, pt, full_bb);
     }
-    generate_pawn_moves(pos, ml, us, full_bb);
+    generate_pawn_moves(pos, ml, us, full_bb, false);
     generate_king_moves<GenType::all>(pos, ml, us, full_bb);
     return ml;
 }
@@ -144,7 +158,8 @@ MoveList generate_by_type(Position& pos) {
     for (PieceType pt : {queen, rook, bishop, knight}) {
         generate_moves<type>(pos, ml, us, pt, mask);
     }
-    generate_pawn_moves(pos, ml, us, mask);
+    bool force_include_promotions = type == GenType::captures;
+    generate_pawn_moves(pos, ml, us, mask, force_include_promotions);
     generate_king_moves<type>(pos, ml, us, mask);
     return ml;
 }

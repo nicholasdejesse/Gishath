@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdlib>
 #include "types.h"
+#include <array>
 
 constexpr Bitboard shift_BB(Bitboard bb, Direction d) {
     switch (d) {
@@ -30,6 +31,9 @@ constexpr int popcount(Bitboard bb) {
         ++count;
     }
     return count;
+}
+constexpr bool single_pop(Bitboard bb) {
+    return (bb & (bb - 1)) == 0;
 }
 
 constexpr int manhattan_distance(Square sq1, Square sq2) {

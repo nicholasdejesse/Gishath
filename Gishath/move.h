@@ -15,8 +15,8 @@ class Move {
 public:
     Move();
     Move(uint16_t data);
-    Move(unsigned int from, unsigned int to);
-    Move(unsigned int from, unsigned int to, MoveType move_type, PieceType promotion_type = knight);
+    Move(Square from, Square to);
+    Move(Square from, Square to, MoveType move_type, PieceType promotion_type = knight);
     Move(std::string str, Position& pos);
 
     Square get_from() const;

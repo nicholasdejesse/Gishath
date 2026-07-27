@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <cctype>
+#include "eval.h"
 
 Position::Position() : board_mailbox{}, type_BB{}, color_BB{}, white_to_move(true), castle_rights(WK | WQ | BK | BQ), halfmove_clock(0), fullmove_clock(1), en_passant_file(-1), unmake_stack{} {}
 
@@ -387,7 +388,6 @@ Color Position::to_move() const {
 // Returns true if square is attacked by other side (not us)
 bool Position::is_attacked(Square sq, Color us) {
     assert(sq <= h8 && sq >= a1);
-    Bitboard friendly_pieces = color_BB[us];
     Bitboard enemy_pieces = color_BB[Color(1 - us)];
     Bitboard occ = pieces();
 
@@ -398,6 +398,20 @@ bool Position::is_attacked(Square sq, Color us) {
         || (get_attacks(us, queen, sq, occ)  & type_BB[queen]  & enemy_pieces)
         || (get_attacks(us, king, sq, occ)   & type_BB[king]   & enemy_pieces);
 }
+
+Bitboard Position::attackers(Square sq, Color side, Bitboard occ) {
+    assert(sq <= h8 && sq >= a1);
+    Bitboard our_pieces = color_BB[side];
+    Color other = Color(1 - side);
+
+    return (get_attacks(other, pawn, sq, occ) & type_BB[pawn] & our_pieces)
+        | (get_attacks(other, knight, sq, occ) & type_BB[knight] & our_pieces)
+        | (get_attacks(other, bishop, sq, occ) & type_BB[bishop] & our_pieces)
+        | (get_attacks(other, rook, sq, occ) & type_BB[rook] & our_pieces)
+        | (get_attacks(other, queen, sq, occ) & type_BB[queen] & our_pieces)
+        | (get_attacks(other, king, sq, occ) & type_BB[king] & our_pieces);
+}
+
 bool Position::is_checked(Color us) {
     // Need to change to be faster later
     assert((type_BB[king] & color_BB[us]) > 0);
@@ -496,4 +510,144 @@ bool Position::insufficient_material() {
 bool Position::is_capture(Move m) {
     if (m.type_of() == en_passant) return true;
     return color_BB[Color(1-side_to_move())] & square_to_bitboard(m.get_to());
+}
+
+// Return true if static exchange evaluation is at least threshold
+// from the perspective of the side making the first move.
+bool Position::see_ge(Move m, int threshold) {
+    std::array<int, 32> gains{};
+    int gain_idx = 0;
+
+    Color us = side_to_move();
+    Color them = Color(1 - us);
+    Square to = m.get_to();
+    Bitboard occ = pieces();
+
+    PieceType captured_type = piecetype_of(board_mailbox[to]);
+    if (m.type_of() == en_passant)
+        captured_type = pawn;
+
+    if (captured_type == no_piece_type)
+        return false;
+
+    // Seed with the value of the captured piece minus the requested threshold.
+    gains[gain_idx++] = mg_value[captured_type - pawn] - threshold;
+
+    int attack_square_val = mg_value[piecetype_of(board_mailbox[m.get_from()]) - pawn];
+
+    occ ^= square_to_bitboard(m.get_from());
+    if (m.type_of() == en_passant)
+        occ ^= shift_BB(square_to_bitboard(m.get_to()), relative_direction(us, south));
+    else
+        occ ^= square_to_bitboard(m.get_to());
+
+    Bitboard attacker = attackers(to, us, occ) | attackers(to, them, occ);
+    if ((attacker & color_BB[them]) == 0)
+        return gains[0] >= 0;
+
+    Bitboard bb;
+
+    while (true) {
+        us = Color(1 - us);
+        attacker &= occ;
+
+        auto [pinners, blockers] = get_pinners_and_blockers(us, occ);
+        if (pinners & occ) {
+            attacker &= ~blockers;
+        }
+
+        if (!(attacker & color_BB[us]))
+            break;
+
+        if ((bb = attacker & color_BB[us] & type_BB[pawn])) {
+            Square att_sq = pop_lsb(bb);
+            gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
+            ++gain_idx;
+            attack_square_val = mg_value[pawn - pawn];
+            occ ^= square_to_bitboard(att_sq);
+            attacker ^= square_to_bitboard(att_sq);
+            attacker |= get_attacks(us, bishop, to, occ) & color_BB[us] & (type_BB[bishop] | type_BB[queen]);
+        }
+        else if ((bb = attacker & color_BB[us] & type_BB[knight])) {
+            Square att_sq = pop_lsb(bb);
+            gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
+            ++gain_idx;
+            attack_square_val = mg_value[knight - pawn];
+            occ ^= square_to_bitboard(att_sq);
+            attacker ^= square_to_bitboard(att_sq);
+        }
+        else if ((bb = attacker & color_BB[us] & type_BB[bishop])) {
+            Square att_sq = pop_lsb(bb);
+            gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
+            ++gain_idx;
+            attack_square_val = mg_value[bishop - pawn];
+            occ ^= square_to_bitboard(att_sq);
+            attacker ^= square_to_bitboard(att_sq);
+            attacker |= get_attacks(us, bishop, to, occ) & color_BB[us] & (type_BB[bishop] | type_BB[queen]);
+        }
+        else if ((bb = attacker & color_BB[us] & type_BB[rook])) {
+            Square att_sq = pop_lsb(bb);
+            gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
+            ++gain_idx;
+            attack_square_val = mg_value[rook - pawn];
+            occ ^= square_to_bitboard(att_sq);
+            attacker ^= square_to_bitboard(att_sq);
+            attacker |= get_attacks(us, rook, to, occ) & color_BB[us] & (type_BB[rook] | type_BB[queen]);
+        }
+        else if ((bb = attacker & color_BB[us] & type_BB[queen])) {
+            Square att_sq = pop_lsb(bb);
+            gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
+            ++gain_idx;
+            attack_square_val = mg_value[queen - pawn];
+            occ ^= square_to_bitboard(att_sq);
+            attacker ^= square_to_bitboard(att_sq);
+            attacker |= get_attacks(us, bishop, to, occ) & color_BB[us] & (type_BB[bishop] | type_BB[queen]);
+            attacker |= get_attacks(us, rook, to, occ) & color_BB[us] & (type_BB[rook] | type_BB[queen]);
+        }
+        else if ((bb = attacker & color_BB[us] & type_BB[king])) {
+            if (attacker & color_BB[Color(1 - us)])
+                break; // Don't allow if enemy attackers exist
+
+            Square att_sq = pop_lsb(bb);
+            gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
+            ++gain_idx;
+            break;
+        }
+
+        // Early cutoff: if neither side can improve the result enough,
+        // there is no need to continue searching deeper attackers.
+        if (std::max(-gains[gain_idx - 1], gains[gain_idx]) < 0)
+            break;
+    }
+
+    while (--gain_idx > 0) {
+        gains[gain_idx - 1] = -std::max(-gains[gain_idx - 1], gains[gain_idx]);
+    }
+
+    return gains[0] >= 0;
+}
+// Pinners are their pieces, blockers are our pieces
+std::pair<Bitboard, Bitboard> Position::get_pinners_and_blockers(Color us, Bitboard occ) {
+    Color them = Color(1 - us);
+    Square king_sq = get_lsb(color_BB[us] & type_BB[king]);
+    Bitboard pinners = 0;
+    Bitboard blockers = 0;
+
+    for (PieceType piece : {bishop, rook}) {
+        Bitboard curr_blockers = get_attacks(us, piece, king_sq, occ) & color_BB[us];
+        Bitboard curr_occ = occ ^ curr_blockers;
+        Bitboard attackers = get_attacks(us, piece, king_sq, curr_occ)
+            & color_BB[them]
+            & (type_BB[piece] | type_BB[queen]);
+
+        while (attackers) {
+            Square att_sq = pop_lsb(attackers);
+            Bitboard blocking = line_between[king_sq][att_sq] & color_BB[us];
+            if (single_pop(blocking)) {
+                pinners |= square_to_bitboard(att_sq);
+                blockers |= blocking;
+            }
+        }
+    }
+    return { pinners, blockers };
 }

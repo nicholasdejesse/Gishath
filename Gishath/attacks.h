@@ -55,6 +55,7 @@ constexpr Bitboard sliding_attacks(Square bb, PieceType pt, Bitboard occ) {
     return attack;
 }
 
+// Does not include the start and end square in mask
 constexpr auto line_between = []() constexpr {
     std::array<std::array<Bitboard, square_num>, square_num> res{};
     for (int i = 0; i < square_num; ++i) {

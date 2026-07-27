@@ -6,6 +6,7 @@
 // Need to update to NNUE later
 
 constexpr int mg_value[6] = { 82, 337, 365, 477, 1025,  0 };
+//constexpr int mg_value[6] = { 100, 300, 300, 500, 900,  0 }; // Simpler version for debugging
 constexpr int eg_value[6] = { 94, 281, 297, 512,  936,  0 };
 
 /* piece/sq tables */

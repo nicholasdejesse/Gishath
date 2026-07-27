@@ -3,8 +3,8 @@
 
 Move::Move() = default;
 Move::Move(uint16_t data) : m_Move(data) {}
-Move::Move(unsigned int from, unsigned int to) : m_Move(((from & 0x3F) << 6) + (to & 0x3F)) {}
-Move::Move(unsigned int from, unsigned int to, MoveType move_type, PieceType promotion_type) : m_Move(move_type + ((promotion_type - knight) << 12) + ((from & 0x3F) << 6) + (to & 0x3F)) {}
+Move::Move(Square from, Square to) : m_Move(((from & 0x3F) << 6) + (to & 0x3F)) {}
+Move::Move(Square from, Square to, MoveType move_type, PieceType promotion_type) : m_Move(move_type + ((promotion_type - knight) << 12) + ((from & 0x3F) << 6) + (to & 0x3F)) {}
 Move::Move(std::string str, Position& pos) {
     // Parse from/to squares from algebraic notation (e.g. "g7g8q")
     Square from = Square((str[0] - 'a') + (str[1] - '1') * 8);

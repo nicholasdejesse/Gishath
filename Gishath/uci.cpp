@@ -116,6 +116,10 @@ void UCIEngine::new_game() {
             from_row.fill(0);
         }
     }
+    for (auto& row : countermove_table) {
+        row.fill(Move(0));
+    }
+
     pv_table.clear_all();
 }
 // Called when "position ..." is passed in, does not reset anything related to current game (i.e. transposition table)
