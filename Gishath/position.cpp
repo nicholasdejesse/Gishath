@@ -651,3 +651,6 @@ std::pair<Bitboard, Bitboard> Position::get_pinners_and_blockers(Color us, Bitbo
     }
     return { pinners, blockers };
 }
+bool Position::only_pawns_left(Color us) {
+    return (color_BB[us] & ~type_BB[pawn] & ~type_BB[king]) == 0;
+}

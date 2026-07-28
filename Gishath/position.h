@@ -61,6 +61,7 @@ public:
     bool threefold_or_50_move();
     bool insufficient_material();
     bool is_capture(Move m);
+    bool only_pawns_left(Color us);
 
     bool see_ge(Move m, int threshold);
     std::pair<Bitboard, Bitboard> get_pinners_and_blockers(Color us, Bitboard occ);

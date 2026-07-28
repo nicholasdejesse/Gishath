@@ -113,7 +113,7 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
         }
         found_legal = true;
         // Delta pruning
-        if (!is_check && captured_type != no_piece_type) {
+        if (!is_check && captured_type != no_piece_type && !pos.only_pawns_left(us) && !pos.only_pawns_left(Color(1-us))) {
             int delta_threshold = delta_pruning;
             if (m.type_of() == promotion) {
                 delta_threshold += mg_value[queen - pawn];
@@ -145,7 +145,6 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
     uci.transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), depth, flag, age);
     if (depth < seldepth) seldepth = depth;
     return max;
-
 }
 
 int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci, Move prev_move) {
