@@ -27,6 +27,7 @@ constexpr int iir_depth_reduction = 2;
 constexpr int aspiration_window = 40; // Centipawns in one direction, full window is 2 times this
 constexpr int aspiration_min_depth = 4;
 constexpr int aspiration_max_tries = 4;
+constexpr int delta_pruning = 350;
 
 // Transposition table
 constexpr int transposition_table_bucket_size = 4; // Number of buckets per index in transposition table

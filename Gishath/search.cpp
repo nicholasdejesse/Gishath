@@ -87,12 +87,15 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
     }
 
     int max = evaluate_position(pos);
+    int standing_pat = max;
     if (max >= beta)
         return max;
     if (max > alpha)
         alpha = max;
 
     bool is_check = pos.is_checked(pos.side_to_move());
+    Color us = pos.side_to_move();
+
     MoveList ml = is_check ? generate(pos) : generate_by_type<GenType::captures>(pos); // This needs to switch to only generate evasions
     MoveOrder order = MoveOrder(ml, pos, ply, uci, true, prev_move);
 
@@ -101,12 +104,25 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
     TranspositionFlag flag = TranspositionFlag::upper_bound;
     for (int i = 0; i < ml.count; ++i) {
         Move m = order.get_next_move();
+        PieceType captured_type = piecetype_of(pos.board_mailbox[m.get_to()]);
+
         pos.make_move(m);
         if (!pos.legal()) {
             pos.unmake_move(m);
             continue;
         }
         found_legal = true;
+        // Delta pruning
+        if (!is_check && captured_type != no_piece_type) {
+            int delta_threshold = delta_pruning;
+            if (m.type_of() == promotion) {
+                delta_threshold += mg_value[queen - pawn];
+            }
+            if (standing_pat + delta_threshold + mg_value[captured_type - pawn] < alpha) {
+                pos.unmake_move(m);
+                continue;
+            }
+        }
         int score = -1 * quiescence(pos, depth - 1, ply + 1, -beta, -alpha, uci, m);
         if (score > max) {
             max = score;
@@ -122,7 +138,7 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
             return max;
         }
     }
-    if (!found_legal && pos.is_checked(pos.side_to_move())) {
+    if (!found_legal && pos.is_checked(us)) {
         return -(checkmate_score - ply);
     }
 
