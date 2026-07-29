@@ -14,6 +14,22 @@ constexpr Bitboard wq_castle_squares = Bitboard(7);
 constexpr Bitboard bk_castle_squares = relative_bb(black, wk_castle_squares);
 constexpr Bitboard bq_castle_squares = relative_bb(black, wq_castle_squares);
 
+int kbnk_corner_distance(Square bishop_sq, Square king_sq) {
+    int kf = file_of(king_sq);
+    int kr = rank_of(king_sq);
+
+    bool bishop_on_dark = get_square_color(bishop_sq) == black;
+
+    if (bishop_on_dark) {
+        // target corners: a1 or h8
+        return std::min(kf + kr, (7 - kf) + (7 - kr));
+    }
+    else {
+        // target corners: h1 or a8
+        return std::min(kf + (7 - kr), (7 - kf) + kr);
+    }
+}
+
 int evaluate_position(Position& pos) {
     // Evaluate from white's perspective, then multiply by color_mult at the end
     // Return draw on first repetition to avoid wasted computation
@@ -124,11 +140,33 @@ int evaluate_position(Position& pos) {
         Square wk_sq = get_lsb(wk);
         Square bk_sq = get_lsb(bk);
         if ((pos.color_BB[white] & ~pos.type_BB[king]) == 0) {
-            eval -= std::max(std::abs(static_cast<int>(file_of(wk_sq - 3))), std::abs(static_cast<int>(rank_of(wk_sq - 3)))) * eval_mopup_king_on_edge_bonus;
+            // Lone white king
+            int edge_dist;
+            if (single_pop(pos.color_BB[black] & pos.type_BB[knight])
+                && single_pop(pos.color_BB[black] & pos.type_BB[bishop])
+                && (pos.color_BB[black] & ~pos.type_BB[knight] & ~pos.type_BB[bishop] & ~pos.type_BB[king]) == 0) {
+                // KBNK endgame, push king to correct corner
+                edge_dist = 7 - kbnk_corner_distance(get_lsb(pos.color_BB[black] & pos.type_BB[bishop]), wk_sq);
+            }
+            else {
+                edge_dist = std::max(std::abs((static_cast<int>(file_of(wk_sq)) - 3)), std::abs((static_cast<int>(rank_of(wk_sq)) - 3)));
+            }
+            eval -= edge_dist * eval_mopup_king_on_edge_bonus;
             eval -= (14 - manhattan_distance(wk_sq, bk_sq)) * eval_mopup_dist_between_king_bonus;
         }
         else if ((pos.color_BB[black] & ~pos.type_BB[king]) == 0) {
-            eval += std::max(std::abs(static_cast<int>(file_of(bk_sq) - 3)), std::abs(static_cast<int>(rank_of(bk_sq) - 3))) * eval_mopup_king_on_edge_bonus;
+            // Lone black king
+            int edge_dist;
+            if (single_pop(pos.color_BB[white] & pos.type_BB[knight])
+                && single_pop(pos.color_BB[white] & pos.type_BB[bishop])
+                && (pos.color_BB[white] & ~pos.type_BB[knight] & ~pos.type_BB[bishop] & ~pos.type_BB[king]) == 0) {
+                // KBNK endgame, push king to correct corner
+                edge_dist = 7 - kbnk_corner_distance(get_lsb(pos.color_BB[white] & pos.type_BB[bishop]), bk_sq);
+            }
+            else {
+                edge_dist = std::max(std::abs((static_cast<int>(file_of(bk_sq)) - 3)), std::abs((static_cast<int>(rank_of(bk_sq)) - 3)));
+            }
+            eval += edge_dist * eval_mopup_king_on_edge_bonus;
             eval += (14 - manhattan_distance(wk_sq, bk_sq)) * eval_mopup_dist_between_king_bonus;
         }
     }

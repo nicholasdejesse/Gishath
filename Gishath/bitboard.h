@@ -3,6 +3,10 @@
 #include "types.h"
 #include <array>
 
+constexpr Color get_square_color(Square sq) {
+    return Color((Bitboard(0xAA55AA55AA55AA55) >> sq) & 1);
+}
+
 constexpr Bitboard shift_BB(Bitboard bb, Direction d) {
     switch (d) {
         case north: return bb << 8;

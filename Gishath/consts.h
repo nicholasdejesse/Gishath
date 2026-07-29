@@ -40,8 +40,8 @@ constexpr int eval_castle_missing_shield_pawn_penalty = 10;
 constexpr int eval_rook_open_file_bonus = 12;
 constexpr int eval_rook_semi_open_file_bonus = 6;
 constexpr int eval_passed_pawn_bonus = 20;
-constexpr int eval_mopup_king_on_edge_bonus = 15;
-constexpr int eval_mopup_dist_between_king_bonus = 10;
+constexpr int eval_mopup_king_on_edge_bonus = 300;
+constexpr int eval_mopup_dist_between_king_bonus = 200;
 //constexpr int eval_knight_mobility_bonus = 3;
 //constexpr int eval_bishop_mobility_bonus = 2;
 

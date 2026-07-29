@@ -26,10 +26,16 @@ int16_t adjust_score_for_tt(int score, int ply) {
     return score;
 }
 
+//int get_lmr_reduction(int depth, int move_number) {
+//    // Cast is fine since this is never called during quiescence search
+//    return std::min(depth - 2, static_cast<int>(0.6 + std::log(static_cast<unsigned int>(depth)) * std::log(static_cast<unsigned int>(move_number)) / 3));
+//}
+
 int get_lmr_reduction(int depth, int move_number) {
     // Cast is fine since this is never called during quiescence search
     return std::min(depth - 2, static_cast<int>(std::round(0.3 + std::log(static_cast<unsigned int>(depth)) * std::log(static_cast<unsigned int>(move_number)) / 5)));
 }
+
 
 int get_lmp_index(int depth) {
     return 3 + depth * depth / 2;
@@ -446,7 +452,6 @@ Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, i
             best_score = curr.second;
             uci.write_search_info(depth, std::max(depth, depth - seldepth), best_score, nodes_visited);
             ++depth;
-            if (best_score > checkmate_score - max_ply) break;
         }
     }
 

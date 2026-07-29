@@ -74,13 +74,8 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionEntry* tt_entry, i
     }
 
     //if (capturing != no_piece_type) {
-    //    if (quiescence) {
-    //        if (mg_value[pt - pawn] - mg_value[capturing - pawn] > 0 && !pos.see_ge(m, -75)) {
-    //            return losing_captures_base_score + mvv_lva_table[capturing][pt];
-    //        }
-    //        else {
-    //            return winning_captures_base_score + mvv_lva_table[capturing][pt];
-    //        }
+    //    if (quiescence && !pos.see_ge(m, 0)) {
+    //        return losing_captures_base_score + mvv_lva_table[capturing][pt];
     //    }
     //    else {
     //        return winning_captures_base_score + mvv_lva_table[capturing][pt];

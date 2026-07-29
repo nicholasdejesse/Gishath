@@ -503,9 +503,7 @@ bool Position::pseudo_legal(Move m) {
 }
 bool Position::insufficient_material() {
     if (type_BB[pawn] || type_BB[rook] || type_BB[queen]) return false;
-    int pop = popcount(pieces());
-    if (pop >= 4) return false;
-    return true;
+    return popcount(pieces()) < 4;
 }
 bool Position::is_capture(Move m) {
     if (m.type_of() == en_passant) return true;
