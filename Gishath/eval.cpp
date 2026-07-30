@@ -95,19 +95,29 @@ int evaluate_position(Position& pos) {
         else if ((file_mask & pos.type_BB[pawn] & pos.color_BB[black]) == 0) eval -= eval_rook_semi_open_file_bonus;
     }
 
-    // Passed pawns scaled to endgames (bonus for distance to enemy king)
-    Bitboard white_passed = pos.type_BB[pawn] & pos.color_BB[white];
-    while (white_passed) {
-        Square sq = pop_lsb(white_passed);
+    // Passed pawns scaled to endgames (bonus for distance to enemy king) and isolated pawns
+    Bitboard white_pawns = pos.type_BB[pawn] & pos.color_BB[white];
+    while (white_pawns) {
+        Square sq = pop_lsb(white_pawns);
         if ((passed_pawn_mask[white][sq] & pos.type_BB[pawn] & pos.color_BB[black]) == 0) {
             eval += (eval_passed_pawn_bonus + manhattan_distance(sq, get_lsb(bk)) + relative_rank(white, rank_of(sq))) * eg_phase / 24;
         }
+        Bitboard file_bb = file_bb_of(file_of(sq));
+        file_bb = shift_BB(file_bb, east) | shift_BB(file_bb, west);
+        if ((file_bb & pos.type_BB[pawn] & pos.color_BB[white]) == 0) {
+            eval -= eval_isolated_pawn_penalty;
+        }
     }
-    Bitboard black_passed = pos.type_BB[pawn] & pos.color_BB[black];
-    while (black_passed) {
-        Square sq = pop_lsb(black_passed);
+    Bitboard black_pawns = pos.type_BB[pawn] & pos.color_BB[black];
+    while (black_pawns) {
+        Square sq = pop_lsb(black_pawns);
         if ((passed_pawn_mask[black][sq] & pos.type_BB[pawn] & pos.color_BB[white]) == 0) {
             eval -= (eval_passed_pawn_bonus + manhattan_distance(sq, get_lsb(wk)) + relative_rank(black, rank_of(sq))) * eg_phase / 24;
+        }
+        Bitboard file_bb = file_bb_of(file_of(sq));
+        file_bb = shift_BB(file_bb, east) | shift_BB(file_bb, west);
+        if ((file_bb & pos.type_BB[pawn] & pos.color_BB[black]) == 0) {
+            eval += eval_isolated_pawn_penalty;
         }
     }
 
