@@ -13,7 +13,8 @@ uint8_t age = 0;
 int nodes_visited = 0;
 int seldepth = 0;
 bool out_of_time = false;
-std::chrono::time_point<std::chrono::steady_clock> end_time;
+std::chrono::time_point<std::chrono::steady_clock> hard_end_time;
+std::chrono::time_point<std::chrono::steady_clock> soft_end_time;
 
 void update_history(std::array<std::array<std::array<int, square_num>, square_num>, color_num>& history_table, Square from, Square to, Color us, int bonus) {
     int clamped_bonus = std::min(max_history_bonus, std::max(-max_history_bonus, bonus));
@@ -49,7 +50,7 @@ int16_t get_ply_adjusted_mate_score(int score, int ply) {
 
 void check_out_of_time() {
     auto time_now = std::chrono::steady_clock::now();
-    if (time_now >= end_time) {
+    if (time_now >= hard_end_time) {
         out_of_time = true;
     }
 }
@@ -411,14 +412,17 @@ Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, i
     nodes_visited = 0;
     seldepth = 0;
     out_of_time = false;
-    end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms_to_search);
+    hard_end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms_to_search);
+    soft_end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms_to_search * 2/3);
 
     for (auto& row : uci.killers) {
         row.fill(Move(0));
     }
 
     int depth = 1;
+    Move prev_move = Move(0);
     Move best_move = Move(0);
+    int prev_score = negative_inf;
     int best_score = negative_inf;
     while (!out_of_time && depth <= max_depth) {
         std::pair<Move, int> curr;
@@ -447,12 +451,20 @@ Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, i
         else {
             curr = pvs(pos, depth, uci, negative_inf, positive_inf);
         }
+
         if (!out_of_time) {
+            prev_move = best_move;
+            prev_score = best_score;
             best_move = curr.first;
             best_score = curr.second;
             uci.write_search_info(depth, std::max(depth, depth - seldepth), best_score, nodes_visited);
             ++depth;
         }
+        if (std::chrono::steady_clock::now() >= soft_end_time
+            && !out_of_time
+            && std::abs(best_score - prev_score) < 20
+            && prev_move == best_move)
+            break; // Soft end time if search is stable
     }
 
     return best_move;

@@ -21,7 +21,7 @@ private:
 
     void new_game();
     void reset_position();
-    unsigned long get_time_for_move(unsigned long wtime, unsigned long btime);
+    unsigned long get_time_for_move(unsigned long wtime, unsigned long btime, unsigned long winc, unsigned long binc);
     std::thread search_thread;
 
 public:

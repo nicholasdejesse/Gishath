@@ -65,6 +65,8 @@ void UCIEngine::loop() {
                 }
                 unsigned long wtime = 5000 * 20;
                 unsigned long btime = 5000 * 20;
+                unsigned long winc = 0;
+                unsigned long binc = 0;
                 if (input_size > 1 && input[1] == "infinite") {
                     wtime = std::numeric_limits<unsigned long>::max();
                     btime = std::numeric_limits<unsigned long>::max();
@@ -73,8 +75,12 @@ void UCIEngine::loop() {
                 if (input_size >= 5 && input[1] == "wtime" && input[3] == "btime") {
                     wtime = std::stoul(input[2]);
                     btime = std::stoul(input[4]);
+                    if (input_size >= 9 && input[5] == "winc" && input[7] == "binc") {
+                        winc = std::stoul(input[6]);
+                        binc = std::stoul(input[8]);
+                    }
                 }
-                unsigned long ms_to_search = get_time_for_move(wtime, btime);
+                unsigned long ms_to_search = get_time_for_move(wtime, btime, winc, binc);
                 Position search_pos = pos;
 
                 search_thread = std::thread([this, search_pos, ms_to_search, max_depth]() mutable {
@@ -139,10 +145,11 @@ void UCIEngine::write_search_info(int depth, int seldepth, int score, int nodes_
     std::cout << std::endl;
 }
 
-unsigned long UCIEngine::get_time_for_move(unsigned long wtime, unsigned long btime) {
+unsigned long UCIEngine::get_time_for_move(unsigned long wtime, unsigned long btime, unsigned long winc, unsigned long binc) {
     // Just divide remaining time by 20
     unsigned long our_time = pos.side_to_move() == white ? wtime : btime;
-    unsigned long time_allotted = our_time / 20;
+    unsigned long our_inc = pos.side_to_move() == white ? winc : binc;
+    unsigned long time_allotted = our_time / 20 + our_inc / 2;
     if (time_allotted > 0) {
         return time_allotted;
     }
