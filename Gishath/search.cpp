@@ -34,7 +34,7 @@ int16_t adjust_score_for_tt(int score, int ply) {
 
 int get_lmr_reduction(int depth, int move_number) {
     // Cast is fine since this is never called during quiescence search
-    return std::min(depth - 2, static_cast<int>(std::round(0.3 + std::log(static_cast<unsigned int>(depth)) * std::log(static_cast<unsigned int>(move_number)) / 5)));
+    return std::min(depth - 2, static_cast<int>(std::round(0.5 + std::log(static_cast<unsigned int>(depth)) * std::log(static_cast<unsigned int>(move_number)) / 5)));
 }
 
 
@@ -93,14 +93,20 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
         }
     }
 
-    int max = evaluate_position(pos);
-    int standing_pat = max;
-    if (max >= beta)
-        return max;
-    if (max > alpha)
-        alpha = max;
+    int max = negative_inf;
+    int standing_pat = negative_inf;
 
     bool is_check = pos.is_checked(pos.side_to_move());
+
+    if (!is_check) {
+        max = evaluate_position(pos);
+        standing_pat = max;
+        if (max >= beta)
+            return max;
+        if (max > alpha)
+            alpha = max;
+    }
+
     Color us = pos.side_to_move();
 
     MoveList ml = is_check ? generate(pos) : generate_by_type<GenType::captures>(pos); // This needs to switch to only generate evasions
@@ -200,6 +206,10 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
         pos.make_nullmove();
         int null_score = -1 * pvs_recursive(pos, depth - 1 - null_move_reduction, ply + 1, -beta, -beta + 1, uci, prev_move);
         pos.unmake_nullmove();
+        if (out_of_time) {
+            return draw_score;
+        }
+
         if (null_score >= beta) {
             uci.transposition_table.insert(pos.zobrist, Move(0), adjust_score_for_tt(null_score, ply), depth, TranspositionFlag::lower_bound, age);
             return null_score;
@@ -226,6 +236,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 
     std::array<Move, move_list_size> quiets;
     int quiet_count = 0;
+    int legal_moves_searched = 0;
 
     for (int i = 0; i < ml.count; ++i) {
         Move m = order.get_next_move();
@@ -263,7 +274,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 
         found_nonfutile = true;
         int score;
-        if (i == 0) {
+        if (legal_moves_searched == 0) {
             score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -beta, -alpha, uci, m);
         }
         else {
@@ -289,6 +300,10 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
             }
             if (score > alpha && beta - alpha > 1)
                 score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -beta, -alpha, uci, m);
+        }
+        if (out_of_time) {
+            pos.unmake_move(m);
+            return draw_score;
         }
         if (score > max) {
             max = score;
@@ -319,6 +334,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
         if (!pos.is_capture(m)) {
             quiets[quiet_count++] = m;
         }
+        ++legal_moves_searched;
     }
     if (!found_legal) {
         if (is_checked) {
@@ -374,6 +390,10 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
             }
             if (score > alpha && beta - alpha > 1)
                 score = -1 * pvs_recursive(pos, depth - 1, 1, -beta, -alpha, uci, Move(0));
+        }
+        if (out_of_time) {
+            pos.unmake_move(m);
+            return std::make_pair(Move(0), draw_score);
         }
         if (nodes_visited % out_of_time_check_freq == 0) {
             check_out_of_time();
