@@ -34,7 +34,7 @@ int16_t adjust_score_for_tt(int score, int ply) {
 
 int get_lmr_reduction(int depth, int move_number) {
     // Cast is fine since this is never called during quiescence search
-    return std::min(depth - 2, static_cast<int>(std::round(0.5 + std::log(static_cast<unsigned int>(depth)) * std::log(static_cast<unsigned int>(move_number)) / 5)));
+    return std::min(depth - 2, static_cast<int>(std::round(0.5 + std::log(static_cast<unsigned int>(depth)) * std::log(static_cast<unsigned int>(move_number)) / 2)));
 }
 
 
@@ -369,6 +369,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
         if (out_of_time)
             return std::make_pair(Move(0), draw_score);
         Move m = order.get_next_move();
+        bool is_capture = pos.is_capture(m);
         //Move m = ml.moves[i];
         pos.make_move(m);
         if (!pos.legal()) {
@@ -380,14 +381,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
             score = -1 * pvs_recursive(pos, depth - 1, 1,  -beta, -alpha, uci, Move(0));
         }
         else {
-            if (depth > lmr_min_depth && !pos.is_checked(pos.side_to_move()) && !pos.is_capture(m) && m.type_of() != promotion) {
-                score = -1 * pvs_recursive(pos, depth - 1 - get_lmr_reduction(depth, i), 1, -alpha - 1, -alpha, uci, Move(0));
-                if (score > alpha)
-                    score = -1 * pvs_recursive(pos, depth - 1, 1, -alpha - 1, -alpha, uci, Move(0));
-            }
-            else {
-                score = -1 * pvs_recursive(pos, depth - 1, 1, -alpha - 1, -alpha, uci, Move(0));
-            }
+            score = -1 * pvs_recursive(pos, depth - 1, 1, -alpha - 1, -alpha, uci, Move(0));
             if (score > alpha && beta - alpha > 1)
                 score = -1 * pvs_recursive(pos, depth - 1, 1, -beta, -alpha, uci, Move(0));
         }
