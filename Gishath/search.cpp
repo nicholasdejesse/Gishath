@@ -278,12 +278,12 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
             score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -beta, -alpha, uci, m);
         }
         else {
-            if (!is_checked && !pos.is_checked(pos.side_to_move()) && !pos.is_capture(m) && m.type_of() != promotion) {
-                if (iter_depth <= lmp_max_depth && i >= get_lmp_index(iter_depth)) {
-                    // Late move pruning
-                    pos.unmake_move(m);
-                    continue;
-                }
+            if (!is_checked && !pos.is_checked(pos.side_to_move()) && !is_capture && m.type_of() != promotion) {
+                //if (iter_depth <= lmp_max_depth && i >= get_lmp_index(iter_depth)) {
+                //    // Late move pruning
+                //    pos.unmake_move(m);
+                //    continue;
+                //}
                 if (iter_depth > lmr_min_depth) {
                     int lmr_reduction = get_lmr_reduction(iter_depth, i);
                     score = -1 * pvs_recursive(pos, iter_depth - 1 - lmr_reduction, ply + 1, -alpha - 1, -alpha, uci, m);
@@ -318,7 +318,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
         if (score >= beta) {
             uci.transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), iter_depth, TranspositionFlag::lower_bound, age);
             insert_killer(uci.killers, pos, m, ply);
-            if (!pos.is_capture(m)) {
+            if (!is_capture) {
                 Square from = m.get_from();
                 Square to = m.get_to();
                 uci.countermove_table [prev_move.get_from()][prev_move.get_to()] = m;
@@ -331,7 +331,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
             }
             return max;
         }
-        if (!pos.is_capture(m)) {
+        if (!is_capture) {
             quiets[quiet_count++] = m;
         }
         ++legal_moves_searched;
