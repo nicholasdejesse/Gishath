@@ -531,7 +531,11 @@ bool Position::see_ge(Move m, int threshold) {
     // Seed with the value of the captured piece minus the requested threshold.
     gains[gain_idx++] = mg_value[captured_type - pawn] - threshold;
 
-    int attack_square_val = mg_value[piecetype_of(board_mailbox[m.get_from()]) - pawn];
+    PieceType moving_type = piecetype_of(board_mailbox[m.get_from()]);
+    if (m.type_of() == promotion) { // or whatever your API uses
+        moving_type = m.get_promotion_piece_type();
+    }
+    int attack_square_val = mg_value[moving_type - pawn];
 
     occ ^= square_to_bitboard(m.get_from());
     if (m.type_of() == en_passant)
