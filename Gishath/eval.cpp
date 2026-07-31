@@ -145,10 +145,11 @@ int evaluate_position(Position& pos) {
     //    eval -= popcount(get_attacks(black, bishop, sq, pos.pieces()) & ~wpawnattacks & ~pos.color_BB[black]) * eval_bishop_mobility_bonus;
     //}
 
+    Square wk_sq = get_lsb(wk);
+    Square bk_sq = get_lsb(bk);
+
     if (pos.type_BB[pawn] == 0) {
         // Mop up (assuming there is sufficient material at this point)
-        Square wk_sq = get_lsb(wk);
-        Square bk_sq = get_lsb(bk);
         if ((pos.color_BB[white] & ~pos.type_BB[king]) == 0) {
             // Lone white king
             int edge_dist;
@@ -180,6 +181,13 @@ int evaluate_position(Position& pos) {
             eval += (14 - manhattan_distance(wk_sq, bk_sq)) * eval_mopup_dist_between_king_bonus;
         }
     }
+
+    // King on open file
+    Bitboard file_mask = file_bb_of(wk_sq);
+    if ((file_mask & pos.type_BB[pawn] & pos.color_BB[white]) == 0) eval -= 10 * mg_phase / 24; // No pawns
+    file_mask = file_bb_of(bk_sq);
+    if ((file_mask & pos.type_BB[pawn] & pos.color_BB[black]) == 0) eval += 10 * mg_phase / 24; // No pawns
+
 
     int color_mult = pos.white_to_move ? 1 : -1;
     return color_mult * eval;
