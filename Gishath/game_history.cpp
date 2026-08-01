@@ -16,7 +16,7 @@ void GameHistory::pop() {
 }
 
 bool GameHistory::repeated(Bitboard zobrist) {
-    for (int i = hashes.size() - 3; i >= 0; i -= 2) {
+    for (int i = static_cast<int>(hashes.size()) - 3; i >= 0; i -= 2) {
         if (!is_reversible[i] || !is_reversible[i + 1]) {
             return false;
         }

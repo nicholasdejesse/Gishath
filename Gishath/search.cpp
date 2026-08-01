@@ -362,6 +362,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
 
     assert(ml.count > 0);
 
+    int legal_moves_searched = 0;
     Move best_move;
     TranspositionFlag flag = TranspositionFlag::upper_bound;
     
@@ -377,7 +378,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
             continue;
         }
         int score;
-        if (i == 0) {
+        if (legal_moves_searched == 0) {
             score = -1 * pvs_recursive(pos, depth - 1, 1,  -beta, -alpha, uci, Move(0));
         }
         else {
@@ -406,6 +407,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
             }
         }
         pos.unmake_move(m);
+        ++legal_moves_searched;
     }
     if (out_of_time)
         return std::make_pair(Move(0), draw_score);

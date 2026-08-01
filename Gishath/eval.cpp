@@ -188,7 +188,6 @@ int evaluate_position(Position& pos) {
     file_mask = file_bb_of(bk_sq);
     if ((file_mask & pos.type_BB[pawn] & pos.color_BB[black]) == 0) eval += 10 * mg_phase / 24; // No pawns
 
-
     int color_mult = pos.white_to_move ? 1 : -1;
     return color_mult * eval;
 }

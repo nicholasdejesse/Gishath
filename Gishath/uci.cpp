@@ -97,9 +97,10 @@ void UCIEngine::loop() {
                 search_thread.join();
             }
         }
-        else if (input[0] == "option") {
+        else if (input[0] == "setoption") {
             if (input_size >= 5 && input[2] == "Hash") {
                 hash_size = static_cast<size_t>(std::stoull(input[4]));
+                transposition_table = TranspositionTable(hash_size);
             }
         }
         else if (input[0] == "quit") {
@@ -134,10 +135,23 @@ void UCIEngine::reset_position() {
 }
 
 void UCIEngine::write_search_info(int depth, int seldepth, int score, int nodes_visited) {
-    if (depth == seldepth)
-        std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes_visited;
-    else
-        std::cout << "info depth " << depth << " seldepth " << seldepth << " score cp " << score << " nodes " << nodes_visited;
+    std::string seldepth_str = "";
+    if (depth != seldepth) {
+        seldepth_str += " seldepth " + std::to_string(seldepth);
+    }
+
+    std::string score_str = "";
+    if (score > checkmate_score - max_ply) {
+        score_str += " score mate " + std::to_string(static_cast<int>(std::round(static_cast<double>(checkmate_score - score) / 2)));
+    }
+    else if (score < -checkmate_score + max_ply) {
+        score_str += " score mate " + std::to_string(static_cast<int>(std::round(static_cast<double>(-checkmate_score - score)) / 2));
+    }
+    else {
+        score_str += " score cp " + std::to_string(score);
+    }
+
+    std::cout << "info depth " << depth << seldepth_str << score_str << " nodes " << nodes_visited;
     std::cout << " pv";
     for (int i = 0; i < pv_table.length(0); ++i) {
         std::cout << ' ' << pv_table.line(0)[i].to_string();
