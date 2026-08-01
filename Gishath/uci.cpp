@@ -134,7 +134,7 @@ void UCIEngine::reset_position() {
     pos = Position();
 }
 
-void UCIEngine::write_search_info(int depth, int seldepth, int score, int nodes_visited) {
+void UCIEngine::write_search_info(int depth, int seldepth, int score, int nodes_visited, int time_elapsed_ms) {
     std::string seldepth_str = "";
     if (depth != seldepth) {
         seldepth_str += " seldepth " + std::to_string(seldepth);
@@ -151,7 +151,11 @@ void UCIEngine::write_search_info(int depth, int seldepth, int score, int nodes_
         score_str += " score cp " + std::to_string(score);
     }
 
-    std::cout << "info depth " << depth << seldepth_str << score_str << " nodes " << nodes_visited;
+    // Avoid division by zero
+    time_elapsed_ms = std::max(1, time_elapsed_ms);
+    // Divide first to avoid integer overflow
+    std::string nps = std::to_string(static_cast<int>((static_cast<double>(nodes_visited) / time_elapsed_ms) * 1000));
+    std::cout << "info depth " << depth << seldepth_str << score_str << " nodes " << nodes_visited << " nps " << nps;
     std::cout << " pv";
     for (int i = 0; i < pv_table.length(0); ++i) {
         std::cout << ' ' << pv_table.line(0)[i].to_string();
