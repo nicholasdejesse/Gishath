@@ -439,7 +439,7 @@ bool Position::legal() {
 Color Position::side_to_move() {
     return white_to_move ? white : black;
 }
-// Returns the squares that enemies attacking the king reside on and rays to block them
+
 Bitboard Position::dangerous(Color us) {
     Color them = Color(1 - us);
     Bitboard friendly_king = color_BB[us] & type_BB[king];
@@ -543,9 +543,12 @@ bool Position::see_ge(Move m, int threshold) {
     else
         occ ^= square_to_bitboard(m.get_to());
 
-    Bitboard attacker = attackers(to, us, occ) | attackers(to, them, occ);
-    if ((attacker & color_BB[them]) == 0)
+    Bitboard attacker_them = attackers(to, them, occ);
+    if ((attacker_them) == 0)
         return gains[0] >= 0;
+
+    Bitboard attacker_us = attackers(to, us, occ);
+    Bitboard attacker = attacker_us | attacker_them;
 
     Bitboard bb;
 

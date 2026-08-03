@@ -10,7 +10,7 @@ constexpr int killer_score_1 = 30000;
 constexpr int killer_score_2 = 29000;
 constexpr int countermove_score = 28000;
 constexpr int quiet_base_score = 12000;
-constexpr int losing_captures_base_score = 2000;
+constexpr int losing_captures_base_score = 27000;
 
 // Note that this includes no_piece_type, but it's faster I think
 constexpr std::array<std::array<int, piece_type_num>, piece_type_num> mvv_lva_table{ {
@@ -69,18 +69,18 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionEntry* tt_entry, i
         }
     }
 
-    if (capturing != no_piece_type) {
-        return winning_captures_base_score + mvv_lva_table[capturing][pt];
-    }
-
     //if (capturing != no_piece_type) {
-    //    if (pos.see_ge(m, 0)) {
-    //        return winning_captures_base_score + mvv_lva_table[capturing][pt];
-    //    }
-    //    else {
-    //        return losing_captures_base_score + mvv_lva_table[capturing][pt];
-    //    }
+    //    return winning_captures_base_score + mvv_lva_table[capturing][pt];
     //}
+
+    if (capturing != no_piece_type) {
+        if (mg_value[capturing - pawn] - mg_value[pt - pawn] < -350 && !pos.see_ge(m, 0)) {
+            return losing_captures_base_score + mvv_lva_table[capturing][pt];
+        }
+        else {
+            return winning_captures_base_score + mvv_lva_table[capturing][pt];
+        }
+    }
 
     // BLIND sorting (better or lower if not defended)
     // Prioritize captures that gain material or are undefended
