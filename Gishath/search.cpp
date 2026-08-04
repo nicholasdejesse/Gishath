@@ -470,7 +470,7 @@ Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, i
             prev_score = best_score;
             best_move = curr.first;
             best_score = curr.second;
-            int elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count();
+            int elapsed_ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count());
             uci.write_search_info(depth, std::max(depth, depth - seldepth), best_score, nodes_visited, elapsed_ms);
             ++depth;
         }
