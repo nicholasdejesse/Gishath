@@ -34,7 +34,7 @@ int get_lmr_reduction(int depth, int move_number) {
 
 
 int get_lmp_index(int depth) {
-    return 8 + depth * depth;
+    return 6 + depth * depth;
 }
 
 int16_t get_ply_adjusted_mate_score(int score, int ply) {
