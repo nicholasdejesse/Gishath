@@ -34,7 +34,7 @@ int get_lmr_reduction(int depth, int move_number) {
 
 
 int get_lmp_index(int depth) {
-    return 3 + depth * depth / 2;
+    return 8 + depth * depth;
 }
 
 int16_t get_ply_adjusted_mate_score(int score, int ply) {
@@ -274,11 +274,11 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
         }
         else {
             if (!is_checked && !pos.is_checked(pos.side_to_move()) && !is_capture && m.type_of() != promotion) {
-                //if (iter_depth <= lmp_max_depth && i >= get_lmp_index(iter_depth)) {
-                //    // Late move pruning
-                //    pos.unmake_move(m);
-                //    continue;
-                //}
+                if (iter_depth <= lmp_max_depth && legal_moves_searched >= get_lmp_index(iter_depth) && beta - alpha <= 1) {
+                    // Late move pruning
+                    pos.unmake_move(m);
+                    continue;
+                }
                 if (iter_depth > lmr_min_depth) {
                     int lmr_reduction = get_lmr_reduction(iter_depth, i);
                     score = -1 * pvs_recursive(pos, iter_depth - 1 - lmr_reduction, ply + 1, -alpha - 1, -alpha, uci, m);

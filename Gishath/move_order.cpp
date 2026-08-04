@@ -9,8 +9,9 @@ constexpr int winning_captures_base_score = 50000;
 constexpr int killer_score_1 = 30000;
 constexpr int killer_score_2 = 29000;
 constexpr int countermove_score = 28000;
-constexpr int quiet_base_score = 12000;
-constexpr int losing_captures_base_score = 27000;
+constexpr int good_quiets = 15000;
+constexpr int losing_captures_base_score = 7500;
+constexpr int bad_quiets = 0;
 
 // Note that this includes no_piece_type, but it's faster I think
 constexpr std::array<std::array<int, piece_type_num>, piece_type_num> mvv_lva_table{ {
@@ -69,18 +70,18 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionEntry* tt_entry, i
         }
     }
 
-    //if (capturing != no_piece_type) {
-    //    return winning_captures_base_score + mvv_lva_table[capturing][pt];
-    //}
-
     if (capturing != no_piece_type) {
-        if (mg_value[capturing - pawn] - mg_value[pt - pawn] < -350 && !pos.see_ge(m, 0)) {
-            return losing_captures_base_score + mvv_lva_table[capturing][pt];
-        }
-        else {
-            return winning_captures_base_score + mvv_lva_table[capturing][pt];
-        }
+        return winning_captures_base_score + mvv_lva_table[capturing][pt];
     }
+
+    //if (capturing != no_piece_type) {
+    //    if (mg_value[capturing - pawn] - mg_value[pt - pawn] < -350 && !pos.see_ge(m, 0)) {
+    //        return losing_captures_base_score + mvv_lva_table[capturing][pt];
+    //    }
+    //    else {
+    //        return winning_captures_base_score + mvv_lva_table[capturing][pt];
+    //    }
+    //}
 
     // BLIND sorting (better or lower if not defended)
     // Prioritize captures that gain material or are undefended
@@ -101,5 +102,9 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionEntry* tt_entry, i
     if (uci.countermove_table[prev_move.get_from()][prev_move.get_to()] == m)
         return countermove_score;
 
-    return quiet_base_score + uci.history_table[pos.side_to_move()][m.get_from()][m.get_to()];
+    int history = uci.history_table[pos.side_to_move()][m.get_from()][m.get_to()];
+    if (history >= 0) {
+        return good_quiets + history;
+    }
+    return bad_quiets + history;
 }
