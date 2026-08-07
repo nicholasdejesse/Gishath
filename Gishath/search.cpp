@@ -10,7 +10,8 @@
 
 Bitboard prev_zobrist = 0;
 uint8_t age = 0;
-int nodes_visited = 0;
+unsigned long long nodes_visited = 0;
+unsigned long long max_nodes_this_search = -1;
 int seldepth = 0;
 bool out_of_time = false;
 std::chrono::time_point<std::chrono::steady_clock> hard_end_time;
@@ -48,6 +49,9 @@ void check_out_of_time() {
     if (time_now >= hard_end_time) {
         out_of_time = true;
     }
+    if (nodes_visited > max_nodes_this_search && max_nodes_this_search >= 0) {
+        out_of_time = true;
+    }
 }
 
 void insert_killer(std::array<std::array<Move, killers_per_ply>, max_ply>& killers, Position& pos, Move m, int ply) {
@@ -61,7 +65,6 @@ void insert_killer(std::array<std::array<Move, killers_per_ply>, max_ply>& kille
 }
 
 int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci, Move prev_move) {
-    ++nodes_visited;
     if (nodes_visited % out_of_time_check_freq == 0) {
         check_out_of_time();
     }
@@ -69,6 +72,7 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
         return draw_score;
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
+    ++nodes_visited;
 
     TranspositionEntry* tt_entry = uci.transposition_table.probe(pos.zobrist);
     if (tt_entry) {
@@ -156,9 +160,6 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
 }
 
 int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci, Move prev_move) {
-    ++nodes_visited;
-    uci.pv_table.pv_length[ply] = 0;
-
     // Call every so often since it is expensive
     if (nodes_visited % out_of_time_check_freq == 0) {
         check_out_of_time();
@@ -171,6 +172,8 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 
     if (pos.threefold_or_50_move() || pos.insufficient_material())
         return draw_score;
+    ++nodes_visited;
+    uci.pv_table.pv_length[ply] = 0;
 
     TranspositionEntry* tt_entry = uci.transposition_table.probe(pos.zobrist);
     if (tt_entry) {
@@ -358,12 +361,12 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
     assert(ml.count > 0);
 
     int legal_moves_searched = 0;
-    Move best_move;
+    Move best_move = Move(0);
     TranspositionFlag flag = TranspositionFlag::upper_bound;
     
     for (int i = 0; i < ml.count; ++i) {
         if (out_of_time)
-            return std::make_pair(Move(0), draw_score);
+            return std::make_pair(best_move, draw_score);
         Move m = order.get_next_move();
         bool is_capture = pos.is_capture(m);
         //Move m = ml.moves[i];
@@ -383,7 +386,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
         }
         if (out_of_time) {
             pos.unmake_move(m);
-            return std::make_pair(Move(0), draw_score);
+            return std::make_pair(best_move, draw_score);
         }
         if (nodes_visited % out_of_time_check_freq == 0) {
             check_out_of_time();
@@ -405,14 +408,14 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
         ++legal_moves_searched;
     }
     if (out_of_time)
-        return std::make_pair(Move(0), draw_score);
+        return std::make_pair(best_move, draw_score);
 
     uci.transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, 0), depth, flag, age);
 
     return std::make_pair(best_move, max);
 }
 
-Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, int max_depth = 9999) {
+Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, int max_depth, unsigned long long max_nodes) {
     // Prevent age increase from searching same position twice
     // (Won't happen in engine play but maybe analysis idk)
     uci.pv_table.clear_all();
@@ -421,6 +424,7 @@ Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, i
         prev_zobrist = pos.zobrist;
     }
     nodes_visited = 0;
+	max_nodes_this_search = max_nodes;
     seldepth = 0;
     out_of_time = false;
 
@@ -474,6 +478,10 @@ Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, i
             uci.write_search_info(depth, std::max(depth, depth - seldepth), best_score, nodes_visited, elapsed_ms);
             ++depth;
         }
+		else if (best_move == Move(0)) {
+            // Fallback for if we run out of time on the first iteration
+			best_move = curr.first;
+		}
         if (std::chrono::steady_clock::now() >= soft_end_time
             && !out_of_time
             && std::abs(best_score - prev_score) < 20

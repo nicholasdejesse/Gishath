@@ -33,7 +33,7 @@ public:
     std::atomic<bool> stop_search{ false };
 
     void loop();
-    void write_search_info(int depth, int seldepth, int score, int nodes_visited, int time_elapsed_ms);
+    void write_search_info(int depth, int seldepth, int score, unsigned long long nodes_visited, int time_elapsed_ms);
 
     UCIEngine();
 };

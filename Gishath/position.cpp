@@ -528,11 +528,10 @@ bool Position::see_ge(Move m, int threshold) {
     if (captured_type == no_piece_type)
         return false;
 
-    // Seed with the value of the captured piece minus the requested threshold.
     gains[gain_idx++] = mg_value[captured_type - pawn] - threshold;
 
     PieceType moving_type = piecetype_of(board_mailbox[m.get_from()]);
-    if (m.type_of() == promotion) { // or whatever your API uses
+    if (m.type_of() == promotion) {
         moving_type = m.get_promotion_piece_type();
     }
     int attack_square_val = mg_value[moving_type - pawn];
@@ -611,7 +610,7 @@ bool Position::see_ge(Move m, int threshold) {
         }
         else if ((bb = attacker & color_BB[us] & type_BB[king])) {
             if (attacker & color_BB[Color(1 - us)])
-                break; // Don't allow if enemy attackers exist
+				break; // Don't do king capture if enemy can capture king
 
             Square att_sq = pop_lsb(bb);
             gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
@@ -619,8 +618,6 @@ bool Position::see_ge(Move m, int threshold) {
             break;
         }
 
-        // Early cutoff: if neither side can improve the result enough,
-        // there is no need to continue searching deeper attackers.
         if (std::max(-gains[gain_idx - 1], gains[gain_idx]) < 0)
             break;
     }

@@ -74,8 +74,8 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionEntry* tt_entry, i
         return winning_captures_base_score + mvv_lva_table[capturing][pt];
     }
 
-    //if (capturing != no_piece_type) {
-    //    if (mg_value[capturing - pawn] - mg_value[pt - pawn] < -350 && !pos.see_ge(m, 0)) {
+    //if (!quiescence && capturing != no_piece_type) {
+    //    if (!pos.see_ge(m, 0)) {
     //        return losing_captures_base_score + mvv_lva_table[capturing][pt];
     //    }
     //    else {

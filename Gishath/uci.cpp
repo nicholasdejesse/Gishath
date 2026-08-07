@@ -60,8 +60,14 @@ void UCIEngine::loop() {
             else {
                 stop_search.store(false);
                 int max_depth = 9999;
-                if (input_size >= 3 && input[1] == "depth") {
-                    max_depth = std::stoi(input[2]);
+				unsigned long long max_nodes = -1;
+                if (input_size >= 3) {
+                    if (input[1] == "depth") {
+                        max_depth = std::stoi(input[2]);
+					}
+					else if (input[1] == "nodes") {
+						max_nodes = std::stoll(input[2]);
+					}
                 }
                 unsigned long wtime = 5000 * 20;
                 unsigned long btime = 5000 * 20;
@@ -83,8 +89,8 @@ void UCIEngine::loop() {
                 unsigned long ms_to_search = get_time_for_move(wtime, btime, winc, binc);
                 Position search_pos = pos;
 
-                search_thread = std::thread([this, search_pos, ms_to_search, max_depth]() mutable {
-                    Move best_move = find_best_move(search_pos, ms_to_search, *this, max_depth);
+                search_thread = std::thread([this, search_pos, ms_to_search, max_depth, max_nodes]() mutable {
+                    Move best_move = find_best_move(search_pos, ms_to_search, *this, max_depth, max_nodes);
 
                     if (!stop_search.load())
                         std::cout << "bestmove " << best_move.to_string() << std::endl;
@@ -134,7 +140,7 @@ void UCIEngine::reset_position() {
     pos = Position();
 }
 
-void UCIEngine::write_search_info(int depth, int seldepth, int score, int nodes_visited, int time_elapsed_ms) {
+void UCIEngine::write_search_info(int depth, int seldepth, int score, unsigned long long nodes_visited, int time_elapsed_ms) {
     std::string seldepth_str = "";
     if (depth != seldepth) {
         seldepth_str += " seldepth " + std::to_string(seldepth);
