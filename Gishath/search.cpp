@@ -160,6 +160,8 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
 }
 
 int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci, Move prev_move) {
+    uci.pv_table.pv_length[ply] = 0;
+
     // Call every so often since it is expensive
     if (nodes_visited % out_of_time_check_freq == 0) {
         check_out_of_time();
@@ -173,7 +175,6 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
     if (pos.threefold_or_50_move() || pos.insufficient_material())
         return draw_score;
     ++nodes_visited;
-    uci.pv_table.pv_length[ply] = 0;
 
     TranspositionEntry* tt_entry = uci.transposition_table.probe(pos.zobrist);
     if (tt_entry) {

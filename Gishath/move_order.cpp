@@ -70,9 +70,9 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionEntry* tt_entry, i
         }
     }
 
-    if (capturing != no_piece_type) {
-        return winning_captures_base_score + mvv_lva_table[capturing][pt];
-    }
+    //if (capturing != no_piece_type) {
+    //    return winning_captures_base_score + mvv_lva_table[capturing][pt];
+    //}
 
     //if (!quiescence && capturing != no_piece_type) {
     //    if (!pos.see_ge(m, 0)) {
@@ -85,14 +85,14 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionEntry* tt_entry, i
 
     // BLIND sorting (better or lower if not defended)
     // Prioritize captures that gain material or are undefended
-    //if (capturing != no_piece_type) {
-    //    if (mg_value[capturing - pawn] - mg_value[pt - pawn] < -50 && pos.is_attacked(to, us)) {
-    //        return losing_captures_base_score + mvv_lva_table[capturing][pt];
-    //    }
-    //    else {
-    //        return winning_captures_base_score + mvv_lva_table[capturing][pt];
-    //    }
-    //}
+    if (capturing != no_piece_type) {
+        if (mg_value[capturing - pawn] - mg_value[pt - pawn] < -50 && pos.is_attacked(to, us)) {
+            return losing_captures_base_score + mvv_lva_table[capturing][pt];
+        }
+        else {
+            return winning_captures_base_score + mvv_lva_table[capturing][pt];
+        }
+    }
 
     if (m == uci.killers[ply][0])
         return killer_score_1;
