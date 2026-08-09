@@ -43,12 +43,12 @@ int16_t get_ply_adjusted_mate_score(int score, int ply) {
     return score;
 }
 
-void check_out_of_time() {
+void check_out_of_time(UCIEngine& uci) {
     auto time_now = std::chrono::steady_clock::now();
     if (time_now >= hard_end_time) {
         out_of_time = true;
     }
-    if (nodes_visited > max_nodes_this_search) {
+    if (!uci.use_soft_nodes && nodes_visited > max_nodes_this_search) {
         out_of_time = true;
     }
 }
@@ -65,7 +65,7 @@ void insert_killer(std::array<std::array<Move, killers_per_ply>, max_ply>& kille
 
 int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci, Move prev_move) {
     if (nodes_visited % out_of_time_check_freq == 0) {
-        check_out_of_time();
+        check_out_of_time(uci);
     }
     if (pos.threefold_or_50_move() || pos.insufficient_material())
         return draw_score;
@@ -163,7 +163,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 
     // Call every so often since it is expensive
     if (nodes_visited % out_of_time_check_freq == 0) {
-        check_out_of_time();
+        check_out_of_time(uci);
         if (uci.stop_search.load()) {
             out_of_time = true;
         }
@@ -384,15 +384,15 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
             if (score > alpha && beta - alpha > 1)
                 score = -1 * pvs_recursive(pos, depth - 1, 1, -beta, -alpha, uci, Move(0));
         }
-        if (out_of_time) {
-            pos.unmake_move(m);
-            return std::make_pair(best_move, draw_score);
-        }
         if (nodes_visited % out_of_time_check_freq == 0) {
-            check_out_of_time();
+            check_out_of_time(uci);
             if (uci.stop_search.load()) {
                 out_of_time = true;
             }
+        }
+        if (out_of_time) {
+            pos.unmake_move(m);
+            return std::make_pair(best_move, draw_score);
         }
 
         if (score > max) {
@@ -482,11 +482,15 @@ Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, i
             // Fallback for if we run out of time on the first iteration
 			best_move = curr.first;
 		}
+		if (nodes_visited >= max_nodes_this_search) {
+			break;
+		}
         if (std::chrono::steady_clock::now() >= soft_end_time
             && !out_of_time
             && std::abs(best_score - prev_score) < 20
-            && prev_move == best_move)
+            && prev_move == best_move) {
             break; // Soft end time if search is stable
+        }
     }
 
     return best_move;

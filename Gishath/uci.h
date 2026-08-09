@@ -30,10 +30,12 @@ public:
     std::array<std::array<std::array<int, square_num>, square_num>, color_num> history_table;
     std::array<std::array<Move, square_num>, square_num> countermove_table;
     PVTable pv_table;
-    std::atomic<bool> stop_search{ false };
 
     void loop();
     void write_search_info(int depth, int seldepth, int score, unsigned long long nodes_visited, int time_elapsed_ms);
+
+    std::atomic<bool> stop_search{ false };
+    bool use_soft_nodes = false;
 
     UCIEngine();
 };

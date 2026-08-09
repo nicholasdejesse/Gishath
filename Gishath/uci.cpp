@@ -111,9 +111,13 @@ void UCIEngine::loop() {
                     transposition_table = TranspositionTable(hash_size);
                 }
                 else if (input[2] == "UseSoftNodes") {
-                    
+					if (input[4] == "true") {
+						use_soft_nodes = true;
+					}
+					else if (input[4] == "false") {
+						use_soft_nodes = false;
+					}
                 }
-
             }
         }
         else if (input[0] == "quit") {
