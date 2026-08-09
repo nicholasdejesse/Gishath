@@ -11,7 +11,7 @@
 Bitboard prev_zobrist = 0;
 uint8_t age = 0;
 unsigned long long nodes_visited = 0;
-unsigned long long max_nodes_this_search = -1;
+unsigned long long max_nodes_this_search = std::numeric_limits<unsigned long long>::max();
 int seldepth = 0;
 bool out_of_time = false;
 std::chrono::time_point<std::chrono::steady_clock> hard_end_time;
@@ -33,7 +33,6 @@ int get_lmr_reduction(int depth, int move_number) {
     return std::min(depth - 2, static_cast<int>(std::round(0.5 + std::log(static_cast<unsigned int>(depth)) * std::log(static_cast<unsigned int>(move_number)) / 2)));
 }
 
-
 int get_lmp_index(int depth) {
     return 6 + depth * depth;
 }
@@ -49,7 +48,7 @@ void check_out_of_time() {
     if (time_now >= hard_end_time) {
         out_of_time = true;
     }
-    if (nodes_visited > max_nodes_this_search && max_nodes_this_search >= 0) {
+    if (nodes_visited > max_nodes_this_search) {
         out_of_time = true;
     }
 }

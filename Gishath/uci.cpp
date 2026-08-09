@@ -15,6 +15,7 @@ void UCIEngine::loop() {
             std::cout << "id name Gishath" << std::endl;
             std::cout << "id author Nicholas DeJesse" << std::endl;
             std::cout << "option name Hash type spin default " << uci_hash_default_size << " min " << uci_hash_min_size << " max " << uci_hash_max_size << std::endl;
+            std::cout << "option name UseSoftNodes type check default false" << std::endl;
             std::cout << "uciok" << std::endl;
         }
         else if (input[0] == "isready") {
@@ -60,7 +61,7 @@ void UCIEngine::loop() {
             else {
                 stop_search.store(false);
                 int max_depth = 9999;
-				unsigned long long max_nodes = -1;
+				unsigned long long max_nodes = std::numeric_limits<unsigned long long>::max();
                 if (input_size >= 3) {
                     if (input[1] == "depth") {
                         max_depth = std::stoi(input[2]);
@@ -104,9 +105,15 @@ void UCIEngine::loop() {
             }
         }
         else if (input[0] == "setoption") {
-            if (input_size >= 5 && input[2] == "Hash") {
-                hash_size = static_cast<size_t>(std::stoull(input[4]));
-                transposition_table = TranspositionTable(hash_size);
+            if (input_size >= 5) {
+                if (input[2] == "Hash") {
+                    hash_size = static_cast<size_t>(std::stoull(input[4]));
+                    transposition_table = TranspositionTable(hash_size);
+                }
+                else if (input[2] == "UseSoftNodes") {
+                    
+                }
+
             }
         }
         else if (input[0] == "quit") {
