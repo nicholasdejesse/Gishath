@@ -134,6 +134,10 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
                 continue;
             }
         }
+        //if (!is_check && !pos.see_ge(m, -150)) {
+        //    pos.unmake_move(m);
+        //    continue;
+        //}
         int score = -1 * quiescence(pos, depth - 1, ply + 1, -beta, -alpha, uci, m);
         if (score > max) {
             max = score;
@@ -353,6 +357,8 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 
 std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, int beta) {
     int max = negative_inf;
+    Color us = pos.side_to_move();
+    bool is_checked = pos.is_checked(us);
 
     MoveList ml = generate(pos);
     MoveOrder order = MoveOrder(ml, pos, 0, uci, false, Move(0));
@@ -360,6 +366,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
 
     assert(ml.count > 0);
 
+	bool found_legal = false;
     int legal_moves_searched = 0;
     Move best_move = Move(0);
     TranspositionFlag flag = TranspositionFlag::upper_bound;
@@ -375,6 +382,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
             pos.unmake_move(m);
             continue;
         }
+        found_legal = true;
         int score;
         if (legal_moves_searched == 0) {
             score = -1 * pvs_recursive(pos, depth - 1, 1,  -beta, -alpha, uci, Move(0));
@@ -406,6 +414,14 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
         }
         pos.unmake_move(m);
         ++legal_moves_searched;
+    }
+    if (!found_legal) {
+        if (is_checked) {
+            return std::make_pair(best_move, -checkmate_score);
+        }
+        else {
+            return std::make_pair(best_move, draw_score);
+        }
     }
     if (out_of_time)
         return std::make_pair(best_move, draw_score);

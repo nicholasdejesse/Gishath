@@ -70,8 +70,10 @@ void UCIEngine::loop() {
 						max_nodes = std::stoll(input[2]);
 					}
                 }
-                unsigned long wtime = 5000 * 20;
-                unsigned long btime = 5000 * 20;
+
+				// Default to infinite search if no time controls are specified
+                unsigned long wtime = std::numeric_limits<unsigned long>::max();
+                unsigned long btime = std::numeric_limits<unsigned long>::max();
                 unsigned long winc = 0;
                 unsigned long binc = 0;
                 if (input_size > 1 && input[1] == "infinite") {
@@ -162,7 +164,7 @@ void UCIEngine::write_search_info(int depth, int seldepth, int score, unsigned l
         score_str += " score mate " + std::to_string(static_cast<int>(std::round(static_cast<double>(checkmate_score - score) / 2)));
     }
     else if (score < -checkmate_score + max_ply) {
-        score_str += " score mate " + std::to_string(static_cast<int>(std::round(static_cast<double>(-checkmate_score - score)) / 2));
+        score_str += " score mate " + std::to_string(static_cast<int>(std::round(static_cast<double>(-checkmate_score - score) / 2)));
     }
     else {
         score_str += " score cp " + std::to_string(score);

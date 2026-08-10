@@ -10,8 +10,8 @@ constexpr int killer_score_1 = 30000;
 constexpr int killer_score_2 = 29000;
 constexpr int countermove_score = 28000;
 constexpr int good_quiets = 15000;
-constexpr int losing_captures_base_score = 7500;
-constexpr int bad_quiets = 0;
+constexpr int losing_captures_base_score = 0;
+constexpr int bad_quiets = 7500;
 
 // Note that this includes no_piece_type, but it's faster I think
 constexpr std::array<std::array<int, piece_type_num>, piece_type_num> mvv_lva_table{ {
@@ -74,8 +74,8 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionEntry* tt_entry, i
     //    return winning_captures_base_score + mvv_lva_table[capturing][pt];
     //}
 
-    //if (!quiescence && capturing != no_piece_type) {
-    //    if (!pos.see_ge(m, 0)) {
+    //if (capturing != no_piece_type) {
+    //    if (!pos.see_ge(m, -50)) {
     //        return losing_captures_base_score + mvv_lva_table[capturing][pt];
     //    }
     //    else {

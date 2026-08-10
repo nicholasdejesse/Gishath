@@ -522,11 +522,15 @@ bool Position::see_ge(Move m, int threshold) {
     Bitboard occ = pieces();
 
     PieceType captured_type = piecetype_of(board_mailbox[to]);
+	PieceType original_from_type = piecetype_of(board_mailbox[m.get_from()]);
     if (m.type_of() == en_passant)
         captured_type = pawn;
 
     if (captured_type == no_piece_type)
         return false;
+
+	if (mg_value[captured_type - pawn] - mg_value[original_from_type - pawn] >= threshold)
+		return true;
 
     gains[gain_idx++] = mg_value[captured_type - pawn] - threshold;
 
@@ -551,11 +555,16 @@ bool Position::see_ge(Move m, int threshold) {
 
     Bitboard bb;
 
+    auto [pinners_w, blockers_w] = get_pinners_and_blockers(white, occ);
+    auto [pinners_b, blockers_b] = get_pinners_and_blockers(black, occ);
+
     while (true) {
         us = Color(1 - us);
         attacker &= occ;
 
-        auto [pinners, blockers] = get_pinners_and_blockers(us, occ);
+		Bitboard pinners = us == white ? pinners_w : pinners_b;
+		Bitboard blockers = us == white ? blockers_w : blockers_b;
+
         if (pinners & occ) {
             attacker &= ~blockers;
         }
@@ -566,7 +575,6 @@ bool Position::see_ge(Move m, int threshold) {
         if ((bb = attacker & color_BB[us] & type_BB[pawn])) {
             Square att_sq = pop_lsb(bb);
             gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
-            ++gain_idx;
             attack_square_val = mg_value[pawn - pawn];
             occ ^= square_to_bitboard(att_sq);
             attacker ^= square_to_bitboard(att_sq);
@@ -575,7 +583,6 @@ bool Position::see_ge(Move m, int threshold) {
         else if ((bb = attacker & color_BB[us] & type_BB[knight])) {
             Square att_sq = pop_lsb(bb);
             gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
-            ++gain_idx;
             attack_square_val = mg_value[knight - pawn];
             occ ^= square_to_bitboard(att_sq);
             attacker ^= square_to_bitboard(att_sq);
@@ -583,7 +590,6 @@ bool Position::see_ge(Move m, int threshold) {
         else if ((bb = attacker & color_BB[us] & type_BB[bishop])) {
             Square att_sq = pop_lsb(bb);
             gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
-            ++gain_idx;
             attack_square_val = mg_value[bishop - pawn];
             occ ^= square_to_bitboard(att_sq);
             attacker ^= square_to_bitboard(att_sq);
@@ -592,7 +598,6 @@ bool Position::see_ge(Move m, int threshold) {
         else if ((bb = attacker & color_BB[us] & type_BB[rook])) {
             Square att_sq = pop_lsb(bb);
             gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
-            ++gain_idx;
             attack_square_val = mg_value[rook - pawn];
             occ ^= square_to_bitboard(att_sq);
             attacker ^= square_to_bitboard(att_sq);
@@ -601,7 +606,6 @@ bool Position::see_ge(Move m, int threshold) {
         else if ((bb = attacker & color_BB[us] & type_BB[queen])) {
             Square att_sq = pop_lsb(bb);
             gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
-            ++gain_idx;
             attack_square_val = mg_value[queen - pawn];
             occ ^= square_to_bitboard(att_sq);
             attacker ^= square_to_bitboard(att_sq);
@@ -614,12 +618,12 @@ bool Position::see_ge(Move m, int threshold) {
 
             Square att_sq = pop_lsb(bb);
             gains[gain_idx] = attack_square_val - gains[gain_idx - 1];
-            ++gain_idx;
             break;
         }
 
         if (std::max(-gains[gain_idx - 1], gains[gain_idx]) < 0)
             break;
+        ++gain_idx;
     }
 
     while (--gain_idx > 0) {
