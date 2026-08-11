@@ -18,13 +18,5 @@
     <ClCompile Include="gishath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="uci.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="uci.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

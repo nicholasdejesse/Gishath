@@ -2,13 +2,18 @@
 
 #include <iostream>
 #include <fstream>
+#include <random>
+#include <vector>
 #include "Gishath/position.h"
 #include "Gishath/bitboard.h"
+#include "Gishath/uci.h"
 
 // Settings
-constexpr int softnodes_per_position = 5000;
-constexpr int max_positions = 5'000'000;
+constexpr int soft_nodes_per_position = 5000;
+constexpr int num_positions = 5000000; // This is a soft limit, final game will not be truncated
+constexpr int num_random_plies = 10; // Number of random plies to play at start of game
 constexpr bool prune_bad_positions = true;
+constexpr int transposition_table_size = 64; // MB
 const std::string viriformat_output_path = "./viriformat_data.viri";
 
 std::ofstream out(viriformat_output_path, std::ios::binary);
@@ -159,4 +164,58 @@ void write_terminator() {
 
 int main() {
     std::cout << "Writing data to " << viriformat_output_path << std::endl;
+
+    // UCI engine stores a bunch of stuff (transposition table, etc.) so we have to create it here
+    UCIEngine uci = UCIEngine();
+    uci.use_soft_nodes = true;
+    uci.hash_size = transposition_table_size;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::uniform_int_distribution<int> distrib(1, 100);
+    int random_num = distrib(gen);
+
+    while (positions_written < num_positions) {
+        uci.new_game();
+
+        std::vector<Move> moves;
+        std::vector<int16_t> scores;
+        moves.reserve(256);
+        scores.reserve(256);
+
+        Position pos;
+        pos.load_fen(start_fen);
+        
+        bool skip_position = false;
+        // Play random plies
+        for (int i = 0; i < num_random_plies; ++i) {
+            Move legal[256];
+            int legal_count = 0;
+            MoveList moves = generate(pos);
+            Color us = pos.side_to_move();
+            for (int c = 0; c < moves.count; ++c) {
+                pos.make_move(moves.moves[c]);
+                if (!pos.is_checked(us)) {
+                    legal[legal_count++] = moves.moves[c];
+                }
+                pos.unmake_move(moves.moves[c]);
+            }
+            if (legal_count == 0) {
+                skip_position = true;
+                break;
+            }
+
+            std::uniform_int_distribution<int> distrib(0, legal_count - 1);
+            pos.make_move(legal[distrib(gen)]);
+        }
+        if (skip_position)
+            skip_position = false;
+            continue;
+
+        
+
+        write_terminator();
+        positions_written++;
+    }
 }

@@ -57,6 +57,9 @@
     <ClCompile Include="..\Gishath\transposition_table.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\Gishath\uci.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Gishath\zobrist.h">
@@ -105,6 +108,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\Gishath\types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Gishath\uci.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

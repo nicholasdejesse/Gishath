@@ -157,6 +157,7 @@
     <ClCompile Include="..\Gishath\pv_table.cpp" />
     <ClCompile Include="..\Gishath\search.cpp" />
     <ClCompile Include="..\Gishath\transposition_table.cpp" />
+    <ClCompile Include="..\Gishath\uci.cpp" />
     <ClCompile Include="..\Gishath\zobrist.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -175,6 +176,7 @@
     <ClInclude Include="..\Gishath\search.h" />
     <ClInclude Include="..\Gishath\transposition_table.h" />
     <ClInclude Include="..\Gishath\types.h" />
+    <ClInclude Include="..\Gishath\uci.h" />
     <ClInclude Include="..\Gishath\zobrist.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

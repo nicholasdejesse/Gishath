@@ -140,10 +140,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="gishath.cpp" />
-    <ClCompile Include="uci.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="uci.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\GishathCore\GishathCore.vcxproj">
