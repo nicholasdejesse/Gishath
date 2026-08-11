@@ -139,41 +139,16 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="attacks.cpp" />
-    <ClCompile Include="bitboard.cpp" />
-    <ClCompile Include="eval.cpp" />
-    <ClCompile Include="game_history.cpp" />
     <ClCompile Include="gishath.cpp" />
-    <ClCompile Include="magics.cpp" />
-    <ClCompile Include="move.cpp" />
-    <ClCompile Include="move_gen.cpp" />
-    <ClCompile Include="move_order.cpp" />
-    <ClCompile Include="perft.cpp" />
-    <ClCompile Include="position.cpp" />
-    <ClCompile Include="search.cpp" />
-    <ClCompile Include="transposition_table.cpp" />
-    <ClCompile Include="pv_table.cpp" />
     <ClCompile Include="uci.cpp" />
-    <ClCompile Include="zobrist.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="attacks.h" />
-    <ClInclude Include="consts.h" />
-    <ClInclude Include="eval.h" />
-    <ClInclude Include="game_history.h" />
-    <ClInclude Include="magics.h" />
-    <ClInclude Include="move.h" />
-    <ClInclude Include="move_gen.h" />
-    <ClInclude Include="move_order.h" />
-    <ClInclude Include="perft.h" />
-    <ClInclude Include="position.h" />
-    <ClInclude Include="search.h" />
-    <ClInclude Include="transposition_table.h" />
-    <ClInclude Include="pv_table.h" />
-    <ClInclude Include="types.h" />
-    <ClInclude Include="bitboard.h" />
     <ClInclude Include="uci.h" />
-    <ClInclude Include="zobrist.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GishathCore\GishathCore.vcxproj">
+      <Project>{ed99c1ea-0242-4174-ba1e-71d61db0b0c1}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

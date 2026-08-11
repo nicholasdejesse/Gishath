@@ -5,4 +5,5 @@
   </Configurations>
   <Project Path="DataGeneration/DataGeneration.vcxproj" Id="b3b0bd7a-bfe6-44b4-91a0-55f0b2755e48" />
   <Project Path="Gishath/Gishath.vcxproj" Id="b60afda4-63e9-48ff-ab5c-49120348d879" />
+  <Project Path="GishathCore/GishathCore.vcxproj" Id="ed99c1ea-0242-4174-ba1e-71d61db0b0c1" />
 </Solution>
