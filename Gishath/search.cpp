@@ -431,7 +431,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
     return std::make_pair(best_move, max);
 }
 
-Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, int max_depth, unsigned long long max_nodes) {
+std::pair<Move, int16_t> find_best_move_and_score(Position& pos, unsigned long ms_to_search, UCIEngine& uci, int max_depth, unsigned long long max_nodes, bool write_info) {
     // Prevent age increase from searching same position twice
     // (Won't happen in engine play but maybe analysis idk)
     uci.pv_table.clear_all();
@@ -491,7 +491,8 @@ Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, i
             best_move = curr.first;
             best_score = curr.second;
             int elapsed_ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count());
-            uci.write_search_info(depth, std::max(depth, depth - seldepth), best_score, nodes_visited, elapsed_ms);
+            if (write_info)
+                uci.write_search_info(depth, std::max(depth, depth - seldepth), best_score, nodes_visited, elapsed_ms);
             ++depth;
         }
 		else if (best_move == Move(0)) {
@@ -509,5 +510,9 @@ Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, i
         }
     }
 
-    return best_move;
+    return std::make_pair(best_move, best_score);
+}
+
+Move find_best_move(Position& pos, unsigned long ms_to_search, UCIEngine& uci, int max_depth, unsigned long long max_nodes, bool write_info) {
+    return find_best_move_and_score(pos, ms_to_search, uci, max_depth, max_nodes, write_info).first;
 }

@@ -7,12 +7,13 @@
 #include "Gishath/position.h"
 #include "Gishath/bitboard.h"
 #include "Gishath/uci.h"
+#include "Gishath/eval.h"
+#include <chrono>
 
 // Settings
 constexpr int soft_nodes_per_position = 5000;
-constexpr int num_positions = 5000000; // This is a soft limit, final game will not be truncated
+constexpr int num_positions = 5000; // This is a soft limit, final game will not be truncated
 constexpr int num_random_plies = 10; // Number of random plies to play at start of game
-constexpr bool prune_bad_positions = true;
 constexpr int transposition_table_size = 64; // MB
 const std::string viriformat_output_path = "./viriformat_data.viri";
 
@@ -23,6 +24,15 @@ int positions_written = 0;
 void write_u8(uint8_t value) {
     out.write(reinterpret_cast<const char*>(&value), sizeof(uint8_t));
 }
+
+void write_s16_le(int16_t value) {
+    uint8_t bytes[2] = {
+        static_cast<uint8_t>(value & 0xFF),
+        static_cast<uint8_t>((value >> 8) & 0xFF)
+    };
+    out.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+}
+
 
 void write_u16_le(uint16_t value) {
     uint8_t bytes[2] = {
@@ -107,7 +117,7 @@ void write_initial_position(Position& pos, int16_t score, uint8_t game_res) {
     write_u16_le(pos.fullmove_clock);
 
     // Score
-    write_u16_le(score);
+    write_s16_le(score);
 
     // Game result
     write_u8(game_res);
@@ -115,7 +125,7 @@ void write_initial_position(Position& pos, int16_t score, uint8_t game_res) {
     write_u8(0); // extra byte
 }
 
-void write_move(Position& pos, Move m, uint16_t score) {
+void write_move(Position& pos, Move m, int16_t score) {
     uint16_t from = m.get_from();
     uint16_t to = m.get_to();
 
@@ -154,7 +164,7 @@ void write_move(Position& pos, Move m, uint16_t score) {
     uint16_t move_encoded = from | (to << 6) | (promotion_piece_type_encoded << 12) | (move_type_encoded << 14);
 
     write_u16_le(move_encoded);
-    write_u16_le(score);
+    write_s16_le(score);
 }
 
 void write_terminator() {
@@ -162,8 +172,41 @@ void write_terminator() {
     out.write(reinterpret_cast<const char*>(&terminator), sizeof(uint32_t));
 }
 
+// This is a very slow way of doing this
+std::vector<Move> legal_moves(Position& pos) {
+    std::vector<Move> legal;
+    legal.reserve(256);
+    MoveList moves = generate(pos);
+    Color us = pos.side_to_move();
+    for (int c = 0; c < moves.count; ++c) {
+        pos.make_move(moves.moves[c]);
+        if (!pos.is_checked(us)) {
+            legal.push_back(moves.moves[c]);
+        }
+        pos.unmake_move(moves.moves[c]);
+    }
+    return legal;
+}
+
+bool has_legal_moves(Position& pos) {
+    MoveList moves = generate(pos);
+    Color us = pos.side_to_move();
+    for (int c = 0; c < moves.count; ++c) {
+        pos.make_move(moves.moves[c]);
+        if (!pos.is_checked(us)) {
+            pos.unmake_move(moves.moves[c]);
+            return true;
+        }
+        pos.unmake_move(moves.moves[c]);
+    }
+    return false;
+}
+
+
 int main() {
     std::cout << "Writing data to " << viriformat_output_path << std::endl;
+
+    auto start_time = std::chrono::steady_clock::now();
 
     // UCI engine stores a bunch of stuff (transposition table, etc.) so we have to create it here
     UCIEngine uci = UCIEngine();
@@ -173,9 +216,6 @@ int main() {
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    std::uniform_int_distribution<int> distrib(1, 100);
-    int random_num = distrib(gen);
-
     while (positions_written < num_positions) {
         uci.new_game();
 
@@ -184,38 +224,60 @@ int main() {
         moves.reserve(256);
         scores.reserve(256);
 
-        Position pos;
+        Position pos = Position();
         pos.load_fen(start_fen);
         
         bool skip_position = false;
         // Play random plies
         for (int i = 0; i < num_random_plies; ++i) {
-            Move legal[256];
-            int legal_count = 0;
-            MoveList moves = generate(pos);
-            Color us = pos.side_to_move();
-            for (int c = 0; c < moves.count; ++c) {
-                pos.make_move(moves.moves[c]);
-                if (!pos.is_checked(us)) {
-                    legal[legal_count++] = moves.moves[c];
-                }
-                pos.unmake_move(moves.moves[c]);
-            }
-            if (legal_count == 0) {
+            std::vector<Move> legal = legal_moves(pos);
+            if (legal.size() == 0) {
                 skip_position = true;
                 break;
             }
 
-            std::uniform_int_distribution<int> distrib(0, legal_count - 1);
+            std::uniform_int_distribution<int> distrib(0, static_cast<int>(legal.size()) - 1);
             pos.make_move(legal[distrib(gen)]);
         }
-        if (skip_position)
+        if (skip_position) {
             skip_position = false;
             continue;
+        }
+        Position initial_pos = pos;
+        int result;
+        while (true) {
+            if (pos.threefold_or_50_move() || pos.insufficient_material()) {
+                result = 1;
+                break;
+            }
+            if (!has_legal_moves(pos)) {
+                if (pos.is_checked(pos.side_to_move())) {
+                    result = pos.side_to_move() == white ? 0 : 2;
+                }
+                else {
+                    result = 1;
+                }
+                break;
+            }
+            std::pair<Move, int16_t> move_and_score = find_best_move_and_score(pos, 999999, uci, 9999, soft_nodes_per_position, true);
+            int16_t relative_score = pos.white_to_move ? move_and_score.second : -move_and_score.second;
+            moves.push_back(move_and_score.first);
+            scores.push_back(relative_score);
 
-        
+            pos.make_move(move_and_score.first);
+            ++positions_written;
+        }
+
+        write_initial_position(initial_pos, 0, result); // Initial score is ignored
+        for (size_t i = 0; i < moves.size(); ++i) {
+            write_move(pos, moves[i], scores[i]);
+        }
 
         write_terminator();
-        positions_written++;
     }
+
+    auto end_time = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::minutes>(end_time - start_time).count();
+
+    std::cout << "Finished generating data in " << duration << " minutes." << std::endl;
 }
