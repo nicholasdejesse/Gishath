@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <vector>
 #include "consts.h"
 #include "types.h"
@@ -21,9 +22,9 @@ struct TranspositionEntry {
 };
 
 struct TranspositionBucket {
-    std::vector<TranspositionEntry> entries;
+    std::array<TranspositionEntry, transposition_table_bucket_size> entries{};
 
-    TranspositionBucket();
+    TranspositionBucket() = default;
 };
 
 class TranspositionTable {

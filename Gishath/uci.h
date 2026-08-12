@@ -16,12 +16,12 @@ const std::string start_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk
 
 class UCIEngine {
 private:
-    Position pos;
 
     unsigned long get_time_for_move(unsigned long wtime, unsigned long btime, unsigned long winc, unsigned long binc);
     std::thread search_thread;
 
 public:
+    Position pos;
     size_t hash_size = uci_hash_default_size;
     TranspositionTable transposition_table;
     std::array<std::array<Move, killers_per_ply>, max_ply> killers;

@@ -48,5 +48,4 @@ void TranspositionTable::insert(Bitboard zobrist, Move best_move, int16_t score,
     bucket->entries[min_idx] = entry;
 }
 
-TranspositionBucket::TranspositionBucket() : entries(transposition_table_bucket_size) {}
 TranspositionTable::TranspositionTable(size_t size_mb) : table((size_mb * 1024 * 1024 / sizeof(TranspositionEntry)) / transposition_table_bucket_size) {}

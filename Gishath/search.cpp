@@ -12,6 +12,7 @@ Bitboard prev_zobrist = 0;
 uint8_t age = 0;
 unsigned long long nodes_visited = 0;
 unsigned long long max_nodes_this_search = std::numeric_limits<unsigned long long>::max();
+unsigned long long hard_max_nodes_this_search = std::numeric_limits<unsigned long long>::max();
 int seldepth = 0;
 bool out_of_time = false;
 std::chrono::time_point<std::chrono::steady_clock> hard_end_time;
@@ -48,7 +49,7 @@ void check_out_of_time(UCIEngine& uci) {
     if (time_now >= hard_end_time) {
         out_of_time = true;
     }
-    if (!uci.use_soft_nodes && nodes_visited > max_nodes_this_search) {
+    if (nodes_visited >= hard_max_nodes_this_search) {
         out_of_time = true;
     }
 }
@@ -441,6 +442,13 @@ std::pair<Move, int16_t> find_best_move_and_score(Position& pos, unsigned long m
     }
     nodes_visited = 0;
 	max_nodes_this_search = max_nodes;
+    if (uci.use_soft_nodes
+        && max_nodes <= std::numeric_limits<unsigned long long>::max() / soft_node_hard_limit_multiplier) {
+        hard_max_nodes_this_search = max_nodes * soft_node_hard_limit_multiplier;
+    }
+    else {
+        hard_max_nodes_this_search = max_nodes;
+    }
     seldepth = 0;
     out_of_time = false;
 
@@ -495,9 +503,10 @@ std::pair<Move, int16_t> find_best_move_and_score(Position& pos, unsigned long m
                 uci.write_search_info(depth, std::max(depth, depth - seldepth), best_score, nodes_visited, elapsed_ms);
             ++depth;
         }
-		else if (best_move == Move(0)) {
+	else if (best_move == Move(0)) {
             // Fallback for if we run out of time on the first iteration
 			best_move = curr.first;
+			best_score = evaluate_position(pos);
 		}
 		if (nodes_visited >= max_nodes_this_search) {
 			break;
