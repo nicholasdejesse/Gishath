@@ -68,7 +68,7 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
     if (nodes_visited % out_of_time_check_freq == 0) {
         check_out_of_time(uci);
     }
-    if (pos.threefold_or_50_move() || pos.insufficient_material())
+    if (pos.threefold_or_50_move(ply) || pos.insufficient_material())
         return draw_score;
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
@@ -176,7 +176,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
 
-    if (pos.threefold_or_50_move() || pos.insufficient_material())
+    if (pos.threefold_or_50_move(ply) || pos.insufficient_material())
         return draw_score;
     ++nodes_visited;
 

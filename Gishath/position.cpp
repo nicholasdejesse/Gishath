@@ -462,8 +462,8 @@ Bitboard Position::dangerous(Color us) {
 Bitboard Position::pieces() {
     return type_BB[all_pieces];
 }
-bool Position::threefold_or_50_move() {
-    return history.repeated(zobrist) || halfmove_clock >= 100;
+bool Position::threefold_or_50_move(int search_ply) {
+    return history.repeated(zobrist, search_ply) || halfmove_clock >= 100;
 }
 // Determine if move is pseudo-legal (for transposition table)
 bool Position::pseudo_legal(Move m) {

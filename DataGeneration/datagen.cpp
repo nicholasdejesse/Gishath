@@ -248,6 +248,10 @@ void write_initial_position(Position& pos, int16_t score, uint8_t game_res) {
 }
 
 void write_move(Position& pos, Move m, int16_t score) {
+    if (m.is_null()) {
+        throw std::invalid_argument("Cannot write a null move to Viriformat data");
+    }
+
     uint16_t from = m.get_from();
     uint16_t to = m.get_to();
 
@@ -413,6 +417,9 @@ int main(int argc, char* argv[]) {
                 break;
             }
             std::pair<Move, int16_t> move_and_score = find_best_move_and_score(uci.pos, 999999, uci, 9999, soft_nodes_per_position, false);
+            if (move_and_score.first.is_null()) {
+                throw std::runtime_error("Search returned a null move in a position with legal moves");
+            }
             int16_t relative_score = uci.pos.white_to_move ? move_and_score.second : -move_and_score.second;
             moves.push_back(move_and_score.first);
             scores.push_back(relative_score);

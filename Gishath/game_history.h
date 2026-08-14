@@ -14,7 +14,7 @@ private:
 public:
     void push(Bitboard zobrist, bool reversible);
     void pop();
-    bool repeated(Bitboard zobrist);
+    bool repeated(Bitboard zobrist, int search_ply);
 
     GameHistory();
 };
