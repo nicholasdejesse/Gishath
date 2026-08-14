@@ -17,7 +17,7 @@
 
 // Settings
 constexpr int soft_nodes_per_position = 5000;
-constexpr int num_positions = 5'000'000; // This is a soft limit, final game will not be truncated
+constexpr int num_positions = 4'000'000; // This is a soft limit, final game will not be truncated
 constexpr int num_random_plies = 10; // Number of random plies to play at start of game
 constexpr int transposition_table_size = 128; // MB
 constexpr int progress_bar_width = 50;

@@ -4,7 +4,18 @@
 #include "consts.h"
 #include "bitboard.h"
 #include <cstdlib>
+#include "nnue.h"
 
+int evaluate_position(Position& pos) {
+    if (pos.threefold_or_50_move() || pos.insufficient_material()) {
+        return draw_score;
+    }
+    return nnue::evaluate(pos);
+}
+
+// Old HCE, replaced with nnue
+#if 0
+// Legacy handcrafted evaluation retained for reference while NNUE is active.
 constexpr Bitboard wk_shield_pawn_mask = (Bitboard(7) << 13);// | (Bitboard(7) << 16);
 constexpr Bitboard wq_shield_pawn_mask = (Bitboard(7) << 8);// | (Bitboard(7) << 21);
 constexpr Bitboard bk_shield_pawn_mask = relative_bb(black, wk_shield_pawn_mask);
@@ -191,3 +202,4 @@ int evaluate_position(Position& pos) {
     int color_mult = pos.white_to_move ? 1 : -1;
     return color_mult * eval;
 }
+#endif

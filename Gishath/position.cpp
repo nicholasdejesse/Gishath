@@ -8,6 +8,7 @@
 Position::Position() : board_mailbox{}, type_BB{}, color_BB{}, white_to_move(true), castle_rights(WK | WQ | BK | BQ), halfmove_clock(0), fullmove_clock(1), en_passant_file(-1), unmake_stack{} {}
 
 void Position::load_fen(std::string fen) {
+    nnue_accumulator_valid = false;
     for (int i = 0; i < square_num; ++i) {
         board_mailbox[i] = no_piece;
     }
@@ -110,6 +111,7 @@ void Position::load_fen(std::string fen) {
     // Load to game history
     history = GameHistory();
     history.push(zobrist, false);
+    nnue::refresh(*this);
 }
 
 std::string Position::to_string() {
@@ -345,6 +347,8 @@ void Position::unmake_nullmove() {
 
 void Position::move_piece(Square from, Square to) {
     Piece piece = board_mailbox[from];
+    nnue::remove_piece(*this, piece, from);
+    nnue::add_piece(*this, piece, to);
     PieceType type = piecetype_of(piece);
     Color color = color_of(piece);
     Bitboard from_to = square_to_bitboard(from) | square_to_bitboard(to);
@@ -359,6 +363,7 @@ void Position::move_piece(Square from, Square to) {
 }
 void Position::put_piece(Square to, Piece piece) {
     assert(board_mailbox[to] == no_piece);
+    nnue::add_piece(*this, piece, to);
     PieceType type = piecetype_of(piece);
     Color color = color_of(piece);
     Bitboard to_mask = square_to_bitboard(to);
@@ -372,6 +377,7 @@ void Position::put_piece(Square to, Piece piece) {
 void Position::remove_piece(Square from) {
     assert(board_mailbox[from] != no_piece);
     Piece piece = board_mailbox[from];
+    nnue::remove_piece(*this, piece, from);
     PieceType type = piecetype_of(piece);
     Color color = color_of(piece);
     Bitboard from_mask = square_to_bitboard(from);

@@ -16,6 +16,7 @@ void UCIEngine::loop() {
             std::cout << "id author Nicholas DeJesse" << std::endl;
             std::cout << "option name Hash type spin default " << uci_hash_default_size << " min " << uci_hash_min_size << " max " << uci_hash_max_size << std::endl;
             std::cout << "option name UseSoftNodes type check default false" << std::endl;
+            std::cout << "option name EvalFile type string default nnue.bin" << std::endl;
             std::cout << "uciok" << std::endl;
         }
         else if (input[0] == "isready") {
@@ -119,6 +120,14 @@ void UCIEngine::loop() {
 					else if (input[4] == "false") {
 						use_soft_nodes = false;
 					}
+                }
+                else if (input[2] == "EvalFile") {
+                    std::string path = input[4];
+                    for (size_t i = 5; i < input_size; ++i) {
+                        path += " " + input[i];
+                    }
+                    nnue::load_network(path);
+                    pos = Position();
                 }
             }
         }

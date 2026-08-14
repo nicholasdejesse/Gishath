@@ -42,6 +42,9 @@
     <ClCompile Include="..\Gishath\move_order.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\Gishath\nnue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\Gishath\perft.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -90,6 +93,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\Gishath\move_order.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Gishath\nnue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\Gishath\perft.h">

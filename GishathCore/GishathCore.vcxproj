@@ -147,6 +147,7 @@
     <ClCompile Include="..\Gishath\move.cpp" />
     <ClCompile Include="..\Gishath\move_gen.cpp" />
     <ClCompile Include="..\Gishath\move_order.cpp" />
+    <ClCompile Include="..\Gishath\nnue.cpp" />
     <ClCompile Include="..\Gishath\perft.cpp" />
     <ClCompile Include="..\Gishath\position.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
@@ -170,6 +171,7 @@
     <ClInclude Include="..\Gishath\move.h" />
     <ClInclude Include="..\Gishath\move_gen.h" />
     <ClInclude Include="..\Gishath\move_order.h" />
+    <ClInclude Include="..\Gishath\nnue.h" />
     <ClInclude Include="..\Gishath\perft.h" />
     <ClInclude Include="..\Gishath\position.h" />
     <ClInclude Include="..\Gishath\pv_table.h" />

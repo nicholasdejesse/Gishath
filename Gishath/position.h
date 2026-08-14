@@ -8,6 +8,7 @@
 #include "move_gen.h"
 #include "game_history.h"
 #include "consts.h"
+#include "nnue.h"
 
 class Move;
 
@@ -19,12 +20,19 @@ struct UnmakeInfo {
 };
 
 class Position {
+    friend void nnue::refresh(Position& position);
+    friend void nnue::add_piece(Position& position, Piece piece, Square square);
+    friend void nnue::remove_piece(Position& position, Piece piece, Square square);
+    friend int nnue::evaluate(const Position& position);
+
 private:
     void move_piece(Square from, Square to);
     void put_piece(Square to, Piece piece);
     void remove_piece(Square from);
     constexpr int unmake_index() const;
     std::array<UnmakeInfo, max_ply> unmake_stack;
+    std::array<nnue::Accumulator, color_num> nnue_accumulators{};
+    bool nnue_accumulator_valid = false;
 
 public:
     std::array<Piece, square_num> board_mailbox;
