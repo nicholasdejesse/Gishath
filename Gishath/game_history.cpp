@@ -15,22 +15,13 @@ void GameHistory::pop() {
     is_reversible.pop_back();
 }
 
-bool GameHistory::repeated(Bitboard zobrist, int search_ply) {
-    int prior_occurrences = 0;
-    const int current_idx = static_cast<int>(hashes.size()) - 1;
-
+bool GameHistory::repeated(Bitboard zobrist) {
     for (int i = static_cast<int>(hashes.size()) - 3; i >= 0; i -= 2) {
         if (!is_reversible[i] || !is_reversible[i + 1]) {
             return false;
         }
         if (hashes[i] == zobrist) {
-            // A repetition made within the search tree can be treated as a draw
-            // immediately to prevent the search from following cycles forever.
-            // Matches from the played game require two prior occurrences, as
-            // required by the threefold-repetition rule.
-            if (current_idx - i <= search_ply || ++prior_occurrences >= 2) {
-                return true;
-            }
+            return true;
         }
     }
     return false;

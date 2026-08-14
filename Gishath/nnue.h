@@ -12,7 +12,7 @@ class Position;
 namespace nnue {
 
 constexpr std::size_t input_size = 768;
-constexpr std::size_t hidden_size = 32;
+constexpr std::size_t hidden_size = 16;
 constexpr std::int16_t qa = 255;
 constexpr std::int16_t qb = 64;
 constexpr int output_scale = 400;

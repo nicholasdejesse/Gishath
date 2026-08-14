@@ -66,7 +66,7 @@ public:
     Color to_move() const;
     void load_fen(std::string fen);
     bool has_legal_moves();
-    bool threefold_or_50_move(int search_ply = 0);
+    bool threefold_or_50_move();
     bool insufficient_material();
     bool is_capture(Move m);
     bool only_pawns_left(Color us);
