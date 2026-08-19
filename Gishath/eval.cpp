@@ -6,11 +6,77 @@
 #include <cstdlib>
 #include "nnue.h"
 
+int kbnk_corner_distance(Square bishop_sq, Square king_sq) {
+    int kf = file_of(king_sq);
+    int kr = rank_of(king_sq);
+
+    bool bishop_on_dark = get_square_color(bishop_sq) == black;
+
+    if (bishop_on_dark) {
+        // target corners: a1 or h8
+        return std::min(kf + kr, (7 - kf) + (7 - kr));
+    }
+    else {
+        // target corners: h1 or a8
+        return std::min(kf + (7 - kr), (7 - kf) + kr);
+    }
+}
+
+int mopup_edge_score(Square king_sq) {
+    int file = file_of(king_sq);
+    int rank = rank_of(king_sq);
+    int distance_from_edge = std::min({ file, 7 - file, rank, 7 - rank });
+    return 3 - distance_from_edge;
+}
+
 int evaluate_position(Position& pos) {
     if (pos.threefold_or_50_move() || pos.insufficient_material()) {
         return draw_score;
     }
-    return nnue::evaluate(pos);
+    int eval = nnue::evaluate(pos);
+    int white_relative_mopup = 0;
+    if (pos.type_BB[pawn] == 0) {
+        Bitboard wk = pos.type_BB[king] & pos.color_BB[white];
+        Bitboard bk = pos.type_BB[king] & pos.color_BB[black];
+        Square wk_sq = get_lsb(wk);
+        Square bk_sq = get_lsb(bk);
+
+        // Mop up (assuming there is sufficient material at this point)
+        // To be replaced by syzygy tablebase at some point
+        if ((pos.color_BB[white] & ~pos.type_BB[king]) == 0) {
+            // Lone white king
+            int edge_dist;
+            if (single_pop(pos.color_BB[black] & pos.type_BB[knight])
+                && single_pop(pos.color_BB[black] & pos.type_BB[bishop])
+                && (pos.color_BB[black] & ~pos.type_BB[knight] & ~pos.type_BB[bishop] & ~pos.type_BB[king]) == 0) {
+                // KBNK endgame, push king to correct corner
+                edge_dist = 7 - kbnk_corner_distance(get_lsb(pos.color_BB[black] & pos.type_BB[bishop]), wk_sq);
+            }
+            else {
+                edge_dist = mopup_edge_score(wk_sq);
+            }
+            white_relative_mopup -= edge_dist * eval_mopup_king_on_edge_bonus;
+            white_relative_mopup -= (14 - manhattan_distance(wk_sq, bk_sq)) * eval_mopup_dist_between_king_bonus;
+        }
+        else if ((pos.color_BB[black] & ~pos.type_BB[king]) == 0) {
+            // Lone black king
+            int edge_dist;
+            if (single_pop(pos.color_BB[white] & pos.type_BB[knight])
+                && single_pop(pos.color_BB[white] & pos.type_BB[bishop])
+                && (pos.color_BB[white] & ~pos.type_BB[knight] & ~pos.type_BB[bishop] & ~pos.type_BB[king]) == 0) {
+                // KBNK endgame, push king to correct corner
+                edge_dist = 7 - kbnk_corner_distance(get_lsb(pos.color_BB[white] & pos.type_BB[bishop]), bk_sq);
+            }
+            else {
+                edge_dist = mopup_edge_score(bk_sq);
+            }
+            white_relative_mopup += edge_dist * eval_mopup_king_on_edge_bonus;
+            white_relative_mopup += (14 - manhattan_distance(wk_sq, bk_sq)) * eval_mopup_dist_between_king_bonus;
+        }
+    }
+
+    eval += pos.white_to_move ? white_relative_mopup : -white_relative_mopup;
+    return eval;
 }
 
 // Old HCE, replaced with nnue
@@ -171,7 +237,7 @@ int evaluate_position(Position& pos) {
                 edge_dist = 7 - kbnk_corner_distance(get_lsb(pos.color_BB[black] & pos.type_BB[bishop]), wk_sq);
             }
             else {
-                edge_dist = std::max(std::abs((static_cast<int>(file_of(wk_sq)) - 3)), std::abs((static_cast<int>(rank_of(wk_sq)) - 3)));
+                edge_dist = mopup_edge_score(wk_sq);
             }
             eval -= edge_dist * eval_mopup_king_on_edge_bonus;
             eval -= (14 - manhattan_distance(wk_sq, bk_sq)) * eval_mopup_dist_between_king_bonus;
@@ -186,7 +252,7 @@ int evaluate_position(Position& pos) {
                 edge_dist = 7 - kbnk_corner_distance(get_lsb(pos.color_BB[white] & pos.type_BB[bishop]), bk_sq);
             }
             else {
-                edge_dist = std::max(std::abs((static_cast<int>(file_of(bk_sq)) - 3)), std::abs((static_cast<int>(rank_of(bk_sq)) - 3)));
+                edge_dist = mopup_edge_score(bk_sq);
             }
             eval += edge_dist * eval_mopup_king_on_edge_bonus;
             eval += (14 - manhattan_distance(wk_sq, bk_sq)) * eval_mopup_dist_between_king_bonus;

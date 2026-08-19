@@ -37,7 +37,7 @@ constexpr int popcount(Bitboard bb) {
     return count;
 }
 constexpr bool single_pop(Bitboard bb) {
-    return (bb & (bb - 1)) == 0;
+    return bb != 0 && (bb & (bb - 1)) == 0;
 }
 
 constexpr int manhattan_distance(Square sq1, Square sq2) {
