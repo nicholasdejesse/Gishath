@@ -14,14 +14,16 @@
 #include "Gishath/magics.h"
 #include "Gishath/zobrist.h"
 #include <chrono>
+#include <cstdlib>
 
 // Settings
 constexpr int soft_nodes_per_position = 5000;
-constexpr int num_positions = 4'000'000; // This is a soft limit, final game will not be truncated
+constexpr int num_positions = 10'000'000; // This is a soft limit, final game will not be truncated
 constexpr int num_random_plies = 10; // Number of random plies to play at start of game
 constexpr int transposition_table_size = 128; // MB
 constexpr int progress_bar_width = 50;
 constexpr bool resume_existing_data = true;
+std::string nnue_path = "./nnue.bin";
 std::string viriformat_output_path = "./training_1.viri";
 
 constexpr std::streamsize initial_record_size = 32;
@@ -29,6 +31,50 @@ constexpr std::streamsize move_record_size = 4;
 
 std::ofstream out;
 int positions_written = 0;
+
+std::filesystem::path resolve_nnue_path(int argc, char* argv[]) {
+    if (argc == 3) {
+        return argv[2];
+    }
+
+#if defined(_MSC_VER)
+    char* configured_path = nullptr;
+    std::size_t configured_path_length = 0;
+    if (_dupenv_s(&configured_path, &configured_path_length, "GISHATH_NNUE_FILE") == 0
+        && configured_path != nullptr) {
+        const std::filesystem::path result(configured_path);
+        std::free(configured_path);
+        if (!result.empty()) {
+            return result;
+        }
+    }
+#else
+    if (const char* configured_path = std::getenv("GISHATH_NNUE_FILE")) {
+        if (*configured_path != '\0') {
+            return configured_path;
+        }
+    }
+#endif
+
+    const std::filesystem::path executable_path = std::filesystem::absolute(argv[0]);
+    const std::filesystem::path executable_directory = executable_path.parent_path();
+    const std::filesystem::path candidates[] = {
+        std::filesystem::current_path() / "nnue.bin",
+        executable_directory / "nnue.bin",
+        executable_directory.parent_path().parent_path() / "nnue.bin",
+    };
+
+    for (const auto& candidate : candidates) {
+        std::error_code error;
+        if (std::filesystem::is_regular_file(candidate, error) && !error) {
+            return candidate;
+        }
+    }
+
+    throw std::runtime_error(
+        "Could not find an NNUE network. Pass its path as the second argument, "
+        "set GISHATH_NNUE_FILE, or place nnue.bin beside DataGeneration.exe.");
+}
 
 void prepare_output_file() {
     positions_written = 0;
@@ -329,15 +375,22 @@ bool has_legal_moves(Position& pos) {
 }
 
 
-int main(int argc, char* argv[]) {
-    if (argc > 2) {
-        std::cerr << "Usage: DataGeneration.exe [output_file.viri]" << std::endl;
+int run_data_generation(int argc, char* argv[]) {
+    if (argc > 3) {
+        std::cerr << "Usage: DataGeneration.exe [output_file.viri] [nnue_file.bin]" << std::endl;
         return 1;
     }
 
     if (argc == 2) {
         viriformat_output_path = argv[1];
     }
+    else if (argc == 3) {
+        viriformat_output_path = argv[1];
+    }
+
+    nnue_path = resolve_nnue_path(argc, argv).string();
+    nnue::load_network(nnue_path);
+    std::cout << "Using NNUE network " << nnue_path << std::endl;
 
     const std::filesystem::path output_path(viriformat_output_path);
     if (output_path.has_parent_path()) {
@@ -437,4 +490,16 @@ int main(int argc, char* argv[]) {
     auto duration = std::chrono::duration_cast<std::chrono::minutes>(end_time - start_time).count();
 
     std::cout << "Finished generating data in " << duration << " minutes." << std::endl;
+
+    return 0;
+}
+
+int main(int argc, char* argv[]) {
+    try {
+        return run_data_generation(argc, argv);
+    }
+    catch (const std::exception& error) {
+        std::cerr << "Data generation failed: " << error.what() << std::endl;
+        return 1;
+    }
 }

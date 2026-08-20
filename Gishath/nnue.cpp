@@ -134,6 +134,13 @@ std::optional<std::filesystem::path> executable_directory() {
 #endif
 }
 
+std::filesystem::path project_root_network_path() {
+    if (const auto directory = executable_directory()) {
+        return (directory->parent_path().parent_path() / "nnue.bin").lexically_normal();
+    }
+    return (std::filesystem::current_path() / "nnue.bin").lexically_normal();
+}
+
 void ensure_loaded() {
     std::scoped_lock lock(network_mutex);
     if (loaded) {
@@ -142,6 +149,12 @@ void ensure_loaded() {
 
     if (const auto configured = configured_network_path()) {
         read_network_file(*configured);
+        return;
+    }
+
+    const auto project_network = project_root_network_path();
+    if (std::filesystem::is_regular_file(project_network)) {
+        read_network_file(project_network.string());
         return;
     }
 
@@ -159,8 +172,9 @@ void ensure_loaded() {
     }
 
     throw std::runtime_error(
-        "No NNUE network found. Put nnue.bin in the working directory or beside "
-        "Gishath.exe, or set GISHATH_NNUE_FILE to the network path.");
+        "No NNUE network found. Expected the project network at " + project_network.string()
+        + ", or nnue.bin in the working/executable directory. You can also set "
+          "GISHATH_NNUE_FILE to the network path.");
 }
 
 constexpr std::size_t feature_index(Color perspective, Piece piece, Square square) {
@@ -325,6 +339,10 @@ int dot(const Accumulator& accumulator, const std::int16_t* weights) {
 }
 
 } // namespace
+
+std::string default_network_path() {
+    return project_root_network_path().string();
+}
 
 void load_network(const std::string& path) {
     std::scoped_lock lock(network_mutex);
