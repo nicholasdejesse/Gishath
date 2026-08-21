@@ -20,7 +20,7 @@
 constexpr int soft_nodes_per_position = 5000;
 constexpr int num_positions = 10'000'000; // This is a soft limit, final game will not be truncated
 constexpr int num_random_plies = 10; // Number of random plies to play at start of game
-constexpr int transposition_table_size = 128; // MB
+constexpr int transposition_table_size = 32; // MB
 constexpr int progress_bar_width = 50;
 constexpr bool resume_existing_data = true;
 std::string nnue_path = "./nnue.bin";
@@ -345,15 +345,14 @@ void write_terminator() {
 }
 
 // This is a very slow way of doing this
-std::vector<Move> legal_moves(Position& pos) {
-    std::vector<Move> legal;
-    legal.reserve(256);
+MoveList legal_moves(Position& pos) {
+    MoveList legal;
     MoveList moves = generate(pos);
     Color us = pos.side_to_move();
     for (int c = 0; c < moves.count; ++c) {
         pos.make_move(moves.moves[c]);
         if (!pos.is_checked(us)) {
-            legal.push_back(moves.moves[c]);
+            legal.push(moves.moves[c]);
         }
         pos.unmake_move(moves.moves[c]);
     }
@@ -434,16 +433,16 @@ int run_data_generation(int argc, char* argv[]) {
         bool skip_position = false;
         // Play random plies
         for (int i = 0; i < num_random_plies; ++i) {
-            std::vector<Move> legal = legal_moves(uci.pos);
-            if (legal.size() == 0) {
+            MoveList legal = legal_moves(uci.pos);
+            if (legal.count == 0) {
                 skip_position = true;
                 break;
             }
 
-            std::uniform_int_distribution<int> distrib(0, static_cast<int>(legal.size()) - 1);
+            std::uniform_int_distribution<int> distrib(0, legal.count - 1);
             // This is a permanent game move, so it must not consume an entry
             // in Position's fixed-size search undo stack.
-            uci.pos.make_move(legal[distrib(gen)], true);
+            uci.pos.make_move(legal.moves[distrib(gen)], true);
         }
         if (skip_position) {
             skip_position = false;

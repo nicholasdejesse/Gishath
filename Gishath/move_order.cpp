@@ -24,7 +24,7 @@ constexpr std::array<std::array<int, piece_type_num>, piece_type_num> mvv_lva_ta
     {0, 0, 0, 0, 0, 0, 0}, // king victim
 }};
 
-MoveOrder::MoveOrder(MoveList& ml, Position& pos, int ply, UCIEngine& uci, bool quiescence, Move prev_move) : ml(ml), pos(pos), idx_sorted(0), scores{} {
+MoveOrder::MoveOrder(MoveList& ml, Position& pos, int ply, UCIEngine& uci, bool quiescence, Move prev_move) : ml(ml), idx_sorted(0) {
     TranspositionEntry* tt_entry = uci.transposition_table.probe(pos.zobrist);
     for (int i = 0; i < ml.count; ++i) {
         scores[i] = score_move(ml.moves[i], pos, tt_entry, ply, uci, quiescence, prev_move);

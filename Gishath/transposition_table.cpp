@@ -4,7 +4,7 @@
 #include <algorithm>
 
 Bitboard TranspositionTable::get_key(Bitboard zobrist) {
-    Bitboard num_buckets = table.size() / transposition_table_bucket_size;
+    Bitboard num_buckets = table.size();
     assert((num_buckets & (num_buckets - 1)) == 0); // Ensure size is power of 2
     return zobrist & (num_buckets - 1);
 }
