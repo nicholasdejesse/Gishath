@@ -357,6 +357,8 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 }
 
 std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, int beta) {
+    const int original_alpha = alpha;
+    const int original_beta = beta;
     int max = negative_inf;
     Color us = pos.side_to_move();
     bool is_checked = pos.is_checked(us);
@@ -367,10 +369,9 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
 
     assert(ml.count > 0);
 
-	bool found_legal = false;
+    bool found_legal = false;
     int legal_moves_searched = 0;
     Move best_move = Move(0);
-    TranspositionFlag flag = TranspositionFlag::upper_bound;
     
     for (int i = 0; i < ml.count; ++i) {
         if (out_of_time)
@@ -408,7 +409,6 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
             max = score;
             best_move = m;
             if (score > alpha) {
-                flag = TranspositionFlag::exact;
                 alpha = score;
                 uci.pv_table.set_pv(m, 0);
             }
@@ -426,6 +426,14 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
     }
     if (out_of_time)
         return std::make_pair(best_move, draw_score);
+
+    TranspositionFlag flag;
+    if (max <= original_alpha)
+        flag = TranspositionFlag::upper_bound;
+    else if (max >= original_beta)
+        flag = TranspositionFlag::lower_bound;
+    else
+        flag = TranspositionFlag::exact;
 
     uci.transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, 0), depth, flag, age);
 
@@ -478,7 +486,7 @@ std::pair<Move, int16_t> find_best_move_and_score(Position& pos, unsigned long m
                 if (curr.second >= beta) {
                     beta_increase *= 2;
                 }
-                else if (curr.second < alpha) {
+                else if (curr.second <= alpha) {
                     alpha_increase *= 2;
                 }
                 else {

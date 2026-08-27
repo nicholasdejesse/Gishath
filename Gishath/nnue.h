@@ -14,8 +14,8 @@ namespace nnue {
 constexpr std::size_t input_size = 768;
 constexpr std::size_t hidden_size = 64;
 constexpr std::int16_t qa = 255;
-constexpr std::int16_t qb = 32;
-constexpr int output_scale = 200; // Scales output back up to centipawns
+constexpr std::int16_t qb = 64;
+constexpr int output_scale = 400; // Scales output back up to centipawns
 
 struct alignas(16) Accumulator {
     std::array<std::int16_t, hidden_size> values{};
