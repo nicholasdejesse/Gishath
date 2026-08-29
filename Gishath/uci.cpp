@@ -96,8 +96,7 @@ void UCIEngine::loop() {
                 search_thread = std::thread([this, search_pos, ms_to_search, max_depth, max_nodes]() mutable {
                     Move best_move = find_best_move(search_pos, ms_to_search, *this, max_depth, max_nodes);
 
-                    if (!stop_search.load())
-                        std::cout << "bestmove " << best_move.to_string() << std::endl;
+                    std::cout << "bestmove " << best_move.to_string() << std::endl;
                 });
             }
         }
