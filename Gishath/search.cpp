@@ -18,6 +18,10 @@ bool out_of_time = false;
 std::chrono::time_point<std::chrono::steady_clock> hard_end_time;
 std::chrono::time_point<std::chrono::steady_clock> soft_end_time;
 
+bool is_pv_node(int alpha, int beta) {
+    return beta - alpha > 1;
+}
+
 void update_history(std::array<std::array<std::array<int, square_num>, square_num>, color_num>& history_table, Square from, Square to, Color us, int bonus) {
     int clamped_bonus = std::min(max_history_bonus, std::max(-max_history_bonus, bonus));
     history_table[us][from][to] += clamped_bonus - history_table[us][from][to] * std::abs(clamped_bonus) / max_history_bonus;
@@ -197,6 +201,11 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
             if (alpha >= beta) return depth_adjusted_score;
         }
     }
+    else {
+        if (is_pv_node(alpha, beta) && depth >= 5) {
+            --depth; // IIR
+        }
+    }
 
     if (depth <= 0) return quiescence(pos, depth, ply, alpha, beta, uci, prev_move); // Don't flip alpha and beta because we aren't going down search tree this call
 
@@ -223,7 +232,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
     int eval = evaluate_position(pos);
     int rfp_margin = reverse_futility_pruning_factor * depth;
     // Not in check, not PV node, not checkmate
-    if (!is_checked && beta - alpha <= 1 && eval >= beta + rfp_margin && std::abs(beta) < checkmate_score - max_ply) {
+    if (!is_checked && !is_pv_node(alpha, beta) && eval >= beta + rfp_margin && std::abs(beta) < checkmate_score - max_ply) {
         return eval;
     }
 
@@ -259,7 +268,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
             int futility = futility_pruning_factors[depth - 1]; // Subtract one because depth 1 corresponds to index 0 in array
             if (!is_capture &&
                 !pos.is_checked(pos.side_to_move()) &&
-                beta - alpha <= 1 &&
+                !is_pv_node(alpha, beta) &&
                 eval + futility <= alpha &&
                 alpha > -checkmate_score + max_ply &&
                 beta < checkmate_score - max_ply)
@@ -282,7 +291,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
         }
         else {
             if (!is_checked && !pos.is_checked(pos.side_to_move()) && !is_capture && m.type_of() != promotion) {
-                if (iter_depth <= lmp_max_depth && legal_moves_searched >= get_lmp_index(iter_depth) && beta - alpha <= 1) {
+                if (iter_depth <= lmp_max_depth && legal_moves_searched >= get_lmp_index(iter_depth) && !is_pv_node(alpha, beta)) {
                     // Late move pruning
                     pos.unmake_move(m);
                     continue;
@@ -301,7 +310,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
             else {
                 score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci, m);
             }
-            if (score > alpha && beta - alpha > 1)
+            if (score > alpha && is_pv_node(alpha, beta))
                 score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -beta, -alpha, uci, m);
         }
         if (out_of_time) {
@@ -391,7 +400,7 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
         }
         else {
             score = -1 * pvs_recursive(pos, depth - 1, 1, -alpha - 1, -alpha, uci, Move(0));
-            if (score > alpha && beta - alpha > 1)
+            if (score > alpha && is_pv_node(alpha, beta))
                 score = -1 * pvs_recursive(pos, depth - 1, 1, -beta, -alpha, uci, Move(0));
         }
         if (nodes_visited % out_of_time_check_freq == 0) {
