@@ -552,10 +552,11 @@ bool Position::see_ge(Move m, int threshold) {
     else
         occ ^= square_to_bitboard(m.get_to());
 
-    Bitboard attacker_them = attackers(to, them, occ);
-    if ((attacker_them) == 0)
+    // Faster filter for undefended squares since computing attackers is expensive
+    if (is_attacked(to, us) == 0)
         return gains[0] >= 0;
 
+    Bitboard attacker_them = attackers(to, them, occ);
     Bitboard attacker_us = attackers(to, us, occ);
     Bitboard attacker = attacker_us | attacker_them;
 
@@ -599,7 +600,7 @@ bool Position::see_ge(Move m, int threshold) {
             attack_square_val = mg_value[bishop - pawn];
             occ ^= square_to_bitboard(att_sq);
             attacker ^= square_to_bitboard(att_sq);
-            attacker |= get_attacks(us, bishop, to, occ) & color_BB[us] & (type_BB[bishop] | type_BB[queen]);
+            attacker |= get_attacks(us, bishop, to, occ) & (type_BB[bishop] | type_BB[queen]);
         }
         else if ((bb = attacker & color_BB[us] & type_BB[rook])) {
             Square att_sq = pop_lsb(bb);
@@ -607,7 +608,7 @@ bool Position::see_ge(Move m, int threshold) {
             attack_square_val = mg_value[rook - pawn];
             occ ^= square_to_bitboard(att_sq);
             attacker ^= square_to_bitboard(att_sq);
-            attacker |= get_attacks(us, rook, to, occ) & color_BB[us] & (type_BB[rook] | type_BB[queen]);
+            attacker |= get_attacks(us, rook, to, occ) & (type_BB[rook] | type_BB[queen]);
         }
         else if ((bb = attacker & color_BB[us] & type_BB[queen])) {
             Square att_sq = pop_lsb(bb);
@@ -615,8 +616,8 @@ bool Position::see_ge(Move m, int threshold) {
             attack_square_val = mg_value[queen - pawn];
             occ ^= square_to_bitboard(att_sq);
             attacker ^= square_to_bitboard(att_sq);
-            attacker |= get_attacks(us, bishop, to, occ) & color_BB[us] & (type_BB[bishop] | type_BB[queen]);
-            attacker |= get_attacks(us, rook, to, occ) & color_BB[us] & (type_BB[rook] | type_BB[queen]);
+            attacker |= get_attacks(us, bishop, to, occ) & (type_BB[bishop] | type_BB[queen]);
+            attacker |= get_attacks(us, rook, to, occ) & (type_BB[rook] | type_BB[queen]);
         }
         else if ((bb = attacker & color_BB[us] & type_BB[king])) {
             if (attacker & color_BB[Color(1 - us)])

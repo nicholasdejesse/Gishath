@@ -122,12 +122,21 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
         Move m = order.get_next_move();
         PieceType captured_type = piecetype_of(pos.board_mailbox[m.get_to()]);
 
+        // SEE pruning
+        bool see_pruned = !is_check && m.type_of() != promotion && !pos.see_ge(m, 0);
+
         pos.make_move(m);
         if (!pos.legal()) {
             pos.unmake_move(m);
             continue;
         }
         found_legal = true;
+
+        if (see_pruned) {
+            pos.unmake_move(m);
+            continue;
+        }
+
         // Delta pruning
         if (!is_check && captured_type != no_piece_type && !pos.only_pawns_left(us) && !pos.only_pawns_left(Color(1-us))) {
             int delta_threshold = delta_pruning;
@@ -139,10 +148,6 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
                 continue;
             }
         }
-        //if (!is_check && !pos.see_ge(m, -150)) {
-        //    pos.unmake_move(m);
-        //    continue;
-        //}
         int score = -1 * quiescence(pos, depth - 1, ply + 1, -beta, -alpha, uci, m);
         if (score > max) {
             max = score;
