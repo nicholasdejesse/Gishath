@@ -5,12 +5,11 @@
 #include "eval.h"
 
 constexpr int hash_score = 90000;
-constexpr int winning_captures_base_score = 50000;
+constexpr int capture_base_score = 50000;
 constexpr int killer_score_1 = 30000;
 constexpr int killer_score_2 = 29000;
 constexpr int countermove_score = 28000;
 constexpr int good_quiets = 15000;
-constexpr int losing_captures_base_score = 0;
 constexpr int bad_quiets = 7500;
 
 // Note that this includes no_piece_type, but it's faster I think
@@ -34,7 +33,10 @@ MoveOrder::MoveOrder(MoveList& ml, Position& pos, int ply, UCIEngine& uci, bool 
 // Performs selection sort to move next best move to front, then returns it
 Move MoveOrder::get_next_move() {
     assert(ml.count > 0);
-    assert(idx_sorted < ml.count);
+    if (idx_sorted >= ml.count) {
+        assert(losing_captures.count > 0);
+        return losing_captures.moves[losing_capture_idx++];
+    }
     int max_idx = -1;
     int max_found_score = negative_inf;
     for (int i = idx_sorted; i < ml.count; ++i) {
@@ -75,12 +77,7 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionEntry* tt_entry, i
     //}
 
     if (capturing != no_piece_type) {
-        if (!pos.see_ge(m, 0)) {
-            return losing_captures_base_score + mvv_lva_table[capturing][pt];
-        }
-        else {
-            return winning_captures_base_score + mvv_lva_table[capturing][pt];
-        }
+        return capture_base_score + mvv_lva_table[capturing][pt];
     }
 
     // BLIND sorting (better or lower if not defended)
@@ -107,4 +104,16 @@ int MoveOrder::score_move(Move m, Position& pos, TranspositionEntry* tt_entry, i
         return good_quiets + history;
     }
     return bad_quiets + history;
+}
+
+bool MoveOrder::is_losing_capture(Move m, Position& pos) {
+    return !pos.see_ge(m, 0);
+}
+
+void MoveOrder::push_losing_capture(Move m) {
+    losing_captures.push(m);
+}
+
+bool MoveOrder::should_search_losing_captures() {
+    return idx_sorted >= ml.count; // At end of main move list
 }

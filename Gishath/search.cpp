@@ -257,6 +257,11 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
 
     for (int i = 0; i < ml.count; ++i) {
         Move m = order.get_next_move();
+        if (pos.is_capture(m) && !order.should_search_losing_captures() && order.is_losing_capture(m, pos)) {
+            --i; // LMR uses this so we want to not increase it for this move yet
+            order.push_losing_capture(m);
+            continue;
+        }
         bool is_capture = pos.is_capture(m);
         pos.make_move(m);
         if (!pos.legal()) {
