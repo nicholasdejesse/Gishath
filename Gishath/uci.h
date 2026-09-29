@@ -17,7 +17,7 @@ const std::string start_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk
 class UCIEngine {
 private:
 
-    unsigned long get_time_for_move(unsigned long wtime, unsigned long btime, unsigned long winc, unsigned long binc);
+    unsigned long get_time_for_move(unsigned long wtime, unsigned long btime, unsigned long winc, unsigned long binc, unsigned long moves_to_go);
     std::thread search_thread;
 
 public:

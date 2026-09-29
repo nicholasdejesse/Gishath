@@ -26,7 +26,32 @@ void TranspositionTable::insert(Bitboard zobrist, Move best_move, int16_t score,
     TranspositionBucket* bucket = &table[key];
     TranspositionEntry entry = { zobrist, best_move, score, depth, flag, age };
 
-    // 1. Replace old entries first
+
+    // 1. Check for worse exact match
+    for (int i = 0; i < transposition_table_bucket_size; ++i) {
+        TranspositionEntry* curr = &bucket->entries[i];
+        if (curr->flag != TranspositionFlag::empty && curr->zobrist == zobrist) {
+            if (best_move.is_null()) {
+                entry.best_move = curr->best_move;
+            }
+
+            const bool more_valuable = depth > curr->depth
+                || (depth == curr->depth && flag == TranspositionFlag::exact)
+                || age != curr->age;
+            if (more_valuable) {
+                *curr = entry;
+            }
+            else {
+                curr->age = age;
+                if (!best_move.is_null()) {
+                    curr->best_move = best_move;
+                }
+            }
+            return;
+        }
+    }
+
+    // 2. Replace old entries
     for (int i = 0; i < transposition_table_bucket_size; ++i) {
         TranspositionEntry* curr = &bucket->entries[i];
         if (age - curr->age >= transposition_table_age_cutoff) {
@@ -35,7 +60,7 @@ void TranspositionTable::insert(Bitboard zobrist, Move best_move, int16_t score,
         }
     }
 
-    // 2. Replace shallowest entry
+    // 3. Replace shallowest entry
     int min_depth = positive_inf;
     int min_idx = -1;
     for (int i = 0; i < transposition_table_bucket_size; ++i) {

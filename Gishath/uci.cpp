@@ -63,34 +63,33 @@ void UCIEngine::loop() {
                 stop_search.store(false);
                 int max_depth = 9999;
 				unsigned long long max_nodes = std::numeric_limits<unsigned long long>::max();
-                if (input_size >= 3) {
-                    if (input[1] == "depth") {
-                        max_depth = std::stoi(input[2]);
-					}
-					else if (input[1] == "nodes") {
-						max_nodes = std::stoll(input[2]);
-					}
-                }
-
-				// Default to infinite search if no time controls are specified
+                unsigned long move_time = 0;
                 unsigned long wtime = std::numeric_limits<unsigned long>::max();
                 unsigned long btime = std::numeric_limits<unsigned long>::max();
                 unsigned long winc = 0;
                 unsigned long binc = 0;
-                if (input_size > 1 && input[1] == "infinite") {
-                    wtime = std::numeric_limits<unsigned long>::max();
-                    btime = std::numeric_limits<unsigned long>::max();
+                unsigned long moves_to_go = 0;
+
+                // Parse UCI go command stuff
+                for (size_t i = 1; i < input_size; ++i) {
+                    if (input[i] == "infinite") continue;
+                    if (i + 1 >= input_size) break;
+
+                    const std::string& value = input[i + 1];
+                    if (input[i] == "depth") max_depth = std::stoi(value);
+                    else if (input[i] == "nodes") max_nodes = std::stoull(value);
+                    else if (input[i] == "movetime") move_time = std::stoul(value);
+                    else if (input[i] == "wtime") wtime = std::stoul(value);
+                    else if (input[i] == "btime") btime = std::stoul(value);
+                    else if (input[i] == "winc") winc = std::stoul(value);
+                    else if (input[i] == "binc") binc = std::stoul(value);
+                    else if (input[i] == "movestogo") moves_to_go = std::stoul(value);
+                    else continue;
+                    ++i;
                 }
-                // This logic is a fragile, should switch later
-                if (input_size >= 5 && input[1] == "wtime" && input[3] == "btime") {
-                    wtime = std::stoul(input[2]);
-                    btime = std::stoul(input[4]);
-                    if (input_size >= 9 && input[5] == "winc" && input[7] == "binc") {
-                        winc = std::stoul(input[6]);
-                        binc = std::stoul(input[8]);
-                    }
-                }
-                unsigned long ms_to_search = get_time_for_move(wtime, btime, winc, binc);
+                unsigned long ms_to_search = move_time > 0
+                    ? move_time
+                    : get_time_for_move(wtime, btime, winc, binc, moves_to_go);
                 Position search_pos = pos;
 
                 search_thread = std::thread([this, search_pos, ms_to_search, max_depth, max_nodes]() mutable {
@@ -190,15 +189,23 @@ void UCIEngine::write_search_info(int depth, int seldepth, int score, unsigned l
     std::cout << std::endl;
 }
 
-unsigned long UCIEngine::get_time_for_move(unsigned long wtime, unsigned long btime, unsigned long winc, unsigned long binc) {
-    // Just divide remaining time by 20
+unsigned long UCIEngine::get_time_for_move(unsigned long wtime, unsigned long btime, unsigned long winc, unsigned long binc, unsigned long moves_to_go) {
     unsigned long our_time = pos.side_to_move() == white ? wtime : btime;
     unsigned long our_inc = pos.side_to_move() == white ? winc : binc;
-    unsigned long time_allotted = our_time / 20 + our_inc / 2;
-    if (time_allotted > 0) {
-        return time_allotted;
+
+    if (our_time == std::numeric_limits<unsigned long>::max()) {
+        return our_time;
     }
-    return our_time;
+
+    constexpr unsigned long move_overhead_ms = 20;
+    const unsigned long available = our_time > move_overhead_ms ? our_time - move_overhead_ms : 1;
+    const unsigned long divisor = moves_to_go > 0 ? moves_to_go : 20;
+    const unsigned long base = available / std::max<unsigned long>(1, divisor);
+    const unsigned long increment = our_inc / 2;
+    const unsigned long allocation = base > available - std::min(available, increment)
+        ? available
+        : base + increment;
+    return std::max<unsigned long>(1, std::min(available, allocation));
 }
 
 UCIEngine::UCIEngine() : transposition_table(uci_hash_default_size), killers{}, history_table{} {}

@@ -1,7 +1,7 @@
 #include "move.h"
 #include "position.h"
 
-Move::Move() = default;
+Move::Move() : m_Move(0) {}
 Move::Move(uint16_t data) : m_Move(data) {}
 Move::Move(Square from, Square to) : m_Move(((from & 0x3F) << 6) + (to & 0x3F)) {}
 Move::Move(Square from, Square to, MoveType move_type, PieceType promotion_type) : m_Move(move_type + ((promotion_type - knight) << 12) + ((from & 0x3F) << 6) + (to & 0x3F)) {}

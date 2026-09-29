@@ -8,6 +8,8 @@
 Position::Position() : board_mailbox{}, type_BB{}, color_BB{}, white_to_move(true), castle_rights(WK | WQ | BK | BQ), halfmove_clock(0), fullmove_clock(1), en_passant_file(-1), unmake_stack{} {}
 
 void Position::load_fen(std::string fen) {
+    zobrist = 0;
+    ply = 0;
     nnue_accumulator_valid = false;
     for (int i = 0; i < square_num; ++i) {
         board_mailbox[i] = no_piece;
@@ -492,7 +494,7 @@ bool Position::pseudo_legal(Move m) {
     MoveType move_type = m.type_of();
     if (move_type == castle) {
         bool kingside = (relative_square(us, to) == g1);
-        uint8_t us_kingside_rights = us == white ? WK : WQ;
+        uint8_t us_kingside_rights = us == white ? WK : BK;
         uint8_t us_queenside_rights = us == white ? WQ : BQ;
         if (kingside) {
             if ((castle_rights & us_kingside_rights) == 0 || is_attacked(relative_square(us, f1), us)) return false;

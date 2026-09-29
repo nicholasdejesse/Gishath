@@ -69,7 +69,10 @@ void insert_killer(std::array<std::array<Move, killers_per_ply>, max_ply>& kille
 }
 
 int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci, Move prev_move) {
-    if (nodes_visited % out_of_time_check_freq == 0) {
+    const int original_alpha = alpha;
+
+    if (nodes_visited % out_of_time_check_freq == 0
+        || nodes_visited >= hard_max_nodes_this_search) {
         check_out_of_time(uci);
     }
     if (pos.threefold_or_50_move() || pos.insufficient_material())
@@ -77,6 +80,14 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
     if (out_of_time)
         return draw_score; // Doesn't matter what we return here
     ++nodes_visited;
+
+    if (ply >= max_ply - 1)
+        return evaluate_position(pos);
+
+    alpha = std::max(alpha, -checkmate_score + ply);
+    beta = std::min(beta, checkmate_score - ply - 1);
+    if (alpha >= beta)
+        return alpha;
 
     TranspositionEntry* tt_entry = uci.transposition_table.probe(pos.zobrist);
     if (tt_entry) {
@@ -117,7 +128,6 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
 
     bool found_legal = false;
     Move best_move = Move();
-    TranspositionFlag flag = TranspositionFlag::upper_bound;
     for (int i = 0; i < ml.count; ++i) {
         Move m = order.get_next_move();
         PieceType captured_type = piecetype_of(pos.board_mailbox[m.get_to()]);
@@ -167,16 +177,23 @@ int quiescence(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine
         return -(checkmate_score - ply);
     }
 
+    const TranspositionFlag flag = max > original_alpha
+        ? TranspositionFlag::exact
+        : TranspositionFlag::upper_bound;
     uci.transposition_table.insert(pos.zobrist, best_move, adjust_score_for_tt(max, ply), depth, flag, age);
     if (depth < seldepth) seldepth = depth;
     return max;
 }
 
 int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEngine& uci, Move prev_move) {
+    if (ply >= max_ply - 1)
+        return evaluate_position(pos);
+
     uci.pv_table.pv_length[ply] = 0;
 
     // Call every so often since it is expensive
-    if (nodes_visited % out_of_time_check_freq == 0) {
+    if (nodes_visited % out_of_time_check_freq == 0
+        || nodes_visited >= hard_max_nodes_this_search) {
         check_out_of_time(uci);
         if (uci.stop_search.load()) {
             out_of_time = true;
@@ -188,6 +205,11 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
     if (pos.threefold_or_50_move() || pos.insufficient_material())
         return draw_score;
     ++nodes_visited;
+
+    alpha = std::max(alpha, -checkmate_score + ply);
+    beta = std::min(beta, checkmate_score - ply - 1);
+    if (alpha >= beta)
+        return alpha;
 
     TranspositionEntry* tt_entry = uci.transposition_table.probe(pos.zobrist);
     if (tt_entry) {
@@ -307,7 +329,7 @@ int pvs_recursive(Position& pos, int depth, int ply, int alpha, int beta, UCIEng
                     continue;
                 }
                 if (iter_depth > lmr_min_depth) {
-                    int lmr_reduction = get_lmr_reduction(iter_depth, i);
+                    int lmr_reduction = get_lmr_reduction(iter_depth, legal_moves_searched + 1);
                     score = -1 * pvs_recursive(pos, iter_depth - 1 - lmr_reduction, ply + 1, -alpha - 1, -alpha, uci, m);
                     if (score > alpha) {
                         score = -1 * pvs_recursive(pos, iter_depth - 1, ply + 1, -alpha - 1, -alpha, uci, m);
@@ -406,12 +428,12 @@ std::pair<Move, int> pvs(Position& pos, int depth, UCIEngine& uci, int alpha, in
         found_legal = true;
         int score;
         if (legal_moves_searched == 0) {
-            score = -1 * pvs_recursive(pos, depth - 1, 1,  -beta, -alpha, uci, Move(0));
+            score = -1 * pvs_recursive(pos, depth - 1, 1,  -beta, -alpha, uci, m);
         }
         else {
-            score = -1 * pvs_recursive(pos, depth - 1, 1, -alpha - 1, -alpha, uci, Move(0));
+            score = -1 * pvs_recursive(pos, depth - 1, 1, -alpha - 1, -alpha, uci, m);
             if (score > alpha && is_pv_node(alpha, beta))
-                score = -1 * pvs_recursive(pos, depth - 1, 1, -beta, -alpha, uci, Move(0));
+                score = -1 * pvs_recursive(pos, depth - 1, 1, -beta, -alpha, uci, m);
         }
         if (nodes_visited % out_of_time_check_freq == 0) {
             check_out_of_time(uci);
